@@ -37,11 +37,11 @@ class M_S_Dummy : public Module {
         }
         return _queue_reading(reading);
     }
-    const char* get_control_name(controls_t con) override { return _Controls[con]; }
+    const char* get_control_name(controls_t con) override { return _controls[con]; }
 
    protected:
 #define GENERATE_STRING(id, msg) msg,
-    static constexpr const char* const _Controls[] = {
+    static constexpr const char* const _controls[] = {
         CONTROL_LIST(GENERATE_STRING)};
 #undef GENERATE_STRING
 #undef CONTROL_LIST

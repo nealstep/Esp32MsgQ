@@ -2,7 +2,7 @@
 
 #include "global.hpp"
 #include "modules.hpp"
-#include "queuer.hpp"
+#include "queuer/queuer.hpp"
 
 #define ERROR_LIST(X)           \
     X(NoErr, "NoError")         \
@@ -30,7 +30,7 @@ class Module {
     void set_enable(bool val) { _enabled = val; }
     const char* get_name(void) { return _name; }
     static constexpr const char* get_error(Err err) {
-        return _Errors[static_cast<uint8_t>(err)];
+        return _errors[static_cast<uint8_t>(err)];
     }
 
     virtual Err get_control(controls_t cid) = 0;
@@ -38,7 +38,7 @@ class Module {
 
    protected:
 #define GENERATE_STRING(id, msg) msg,
-    static constexpr const char* const _Errors[] = {
+    static constexpr const char* const _errors[] = {
         ERROR_LIST(GENERATE_STRING)};
 #undef GENERATE_STRING
 #undef ERROR_LIST

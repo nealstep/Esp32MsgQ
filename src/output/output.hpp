@@ -1,11 +1,13 @@
 #pragma once
 
+#include "messages.hpp"
 #include "modules/module.hpp"
 
 #define OUTPUT_LIST(X) \
     X(Rdg, '@')        \
     X(Log, '*')        \
-    X(Erm, '!')
+    X(Erm, '!')        \
+    X(Dat, '$')
 
 #define ERROR_LIST(X)           \
     X(NoErr, "No Error")        \
@@ -25,11 +27,15 @@ class Output {
 
     static constexpr const uint8_t output_size = 128;
     static constexpr const uint8_t timestamp_size = 32;
+    static constexpr const uint8_t data_size = 64;
 
     static constexpr const char* const reading_fmt_u = "%c|%s|%s|%u|%s";
     static constexpr const char* const reading_fmt_f = "%c|%s|%s|%f|%s";
     static constexpr const char* const error_fmt = "%c|%s|%s|%s:%d|%s";
     static constexpr const char* const time_fmt = "%Y-%m-%d@%H:%M:%S-%Z";
+    static constexpr const char* const data_fmt = "%c|%s|%s";
+    static constexpr const char* const data_s_u = "%s|%u";
+    static constexpr const char* const data_s_s = "%s|%s";
 
     static constexpr const char* const no_time = "NoTime";
 
@@ -59,25 +65,51 @@ class Output {
     void handle(Module::Err err, Context ctx, const char* fname, int line) {
         _handle(Module::get_error(err), ctx, fname, line);
     }
+    void handle(Messages::Uni uni, Messages::Sev sev, Messages::Not notice,
+                Context ctx, const char* fname, int line) {}
+
+    void handle(Messages::Var var, uint32_t val, bool broadcast = false) {
+        char dv_s[data_size];
+        int len = snprintf(dv_s, sizeof(dv_s), data_s_u,
+                           Messages::get_message(var), val);
+        if (len < 0) {
+            print("Error in data handler at snprintf format, Aborting");
+            return;
+        } else if (len >= sizeof(dv_s))
+            print("Error in data handler at snprintf truncated");
+        _handle(dv_s, broadcast);
+    }
+
+    void handle(Messages::Var var, const char* val, bool broadcast = false) {
+        char dv_s[data_size];
+        int len = snprintf(dv_s, sizeof(dv_s), data_s_s,
+                           Messages::get_message(var), val);
+        if (len < 0) {
+            print("Error in data handler at snprintf format, Aborting");
+            return;
+        } else if (len >= sizeof(dv_s))
+            print("Error in data handler at snprintf truncated");
+        _handle(dv_s, broadcast);
+    }
 
     void print(const char* str) {
 #ifdef ARDUINO
 #ifdef SER
-        SER.println(str);
-#endif  // SER
-#else   // !ARDUINO
-        std::cout << str << std::endl;
-#endif  // ARDUINO !ARDIUNO
+        SER.println(str);  // OK
+#endif                     // SER
+#else                      // !ARDUINO
+        std::cout << str << std::endl;  // OK
+#endif                     // ARDUINO !ARDIUNO
     }
-    static constexpr const char get_output(Out out) { return _Outputs[out]; }
+    static constexpr const char get_output(Out out) { return _outputs[out]; }
     static constexpr const char* get_error(Err err) {
-        return _Errors[static_cast<uint8_t>(err)];
+        return _errors[static_cast<uint8_t>(err)];
     }
 
    protected:
 #define GENERATE_STRING(id, msg) msg,
-    static constexpr const char _Outputs[] = {OUTPUT_LIST(GENERATE_STRING)};
-    static constexpr const char* const _Errors[] = {
+    static constexpr const char _outputs[] = {OUTPUT_LIST(GENERATE_STRING)};
+    static constexpr const char* const _errors[] = {
         ERROR_LIST(GENERATE_STRING)};
 #undef GENERATE_STRING
 #undef OUTPUT_LIST
@@ -88,6 +120,7 @@ class Output {
 
     Err _get_timestamp(time_t asof, char* buffer, size_t len);
     void _handle(const char* err_m, Context ctx, const char* fname, int line);
+    void _handle(const char* data_s, bool broadcast);
 };
 
 static Output& output = Output::getInstance();

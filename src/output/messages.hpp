@@ -4,15 +4,25 @@
 
 #define UNIT_LIST(X) \
     X(Main, "Main")  \
-    X(Pref, "Pref")  \
     X(Mods, "Mods")  \
     X(Mess, "Mess")  \
-    X(MSer, "MSer")  \
-    X(MNet, "MNet")
+    X(MNet, "MNet")  \
+    X(Pref, "Pref")  \
+    X(Quer, "Quer")
 
-#define NOTICE_LIST(X)     \
-    X(NoError, "No Error") \
-    X(UnkError, "Unknown Error")
+#define NOTICE_LIST(X)       \
+    X(NoNotice, "No Notice") \
+    X(Start, "Starting")     \
+    X(Started, "Started")
+
+#define VARIABLE_LIST(X)                \
+    X(GitVer, "Git Version")        \
+    X(FirmVer, "Firmware Verstion") \
+    X(BuildTime, "Build Time")          \
+    X(BuildID, "Build ID")              \
+    X(CPUF, "CPU Freq (Mhz)")           \
+    X(FlshF, "Flash Freq (Mhz)")        \
+    X(Heap, "Free Heap (bytes)")
 
 #define WORD_LIST(X)      \
     X(Unknown, "Unknown") \
@@ -23,7 +33,6 @@
     X(Dbg, "Debug")      \
     X(Inf, "Info")       \
     X(Wrn, "Warning")    \
-    X(Err, "Error")      \
     X(All, "All")
 
 class Messages {
@@ -39,16 +48,8 @@ class Messages {
 #define GENERATE_ENUM(id, msg) id,
     enum class Sev : uint8_t { SEVERITY_LIST(GENERATE_ENUM) Count };
     enum class Not : uint16_t { NOTICE_LIST(GENERATE_ENUM) Count };
+    enum class Var : uint16_t { VARIABLE_LIST(GENERATE_ENUM) Count };
 #undef GENERATE_ENUM
-
-#define GENERATE_STRING(id, msg) msg,
-    static constexpr const char* const Units[] = {"Unamed",
-                                                  UNIT_LIST(GENERATE_STRING)};
-    static constexpr const char* const Severities[] = {
-        SEVERITY_LIST(GENERATE_STRING)};
-    static constexpr const char* const Notices[] = {
-        NOTICE_LIST(GENERATE_STRING)};
-#undef GENERATE_STRING
 
     class Word {
        public:
@@ -64,7 +65,7 @@ class Messages {
         time_t asof;
         Uni unit;
         Sev severity;
-        char* message[message_size];
+        Not notice;
     } LogMessage;
 
     // lazy singleton
@@ -78,21 +79,39 @@ class Messages {
     // message functions
     constexpr const char* get_word(Uni code) {
         uint32_t unit = static_cast<uint32_t>(code);
-        if (unit == 0) return Units[0];
+        if (unit == 0) return _units[0];
         uint8_t bit = __builtin_ctz(unit);
         if (bit >= unit_max) {
             return Word::Invalid;
         }
-        return Units[bit + 1];
+        return _units[bit + 1];
     }
-    constexpr const char* get_message(Sev code) {
-        return Severities[static_cast<uint8_t>(code)];
+    static constexpr const char* get_message(Sev code) {
+        return _severities[static_cast<uint8_t>(code)];
     }
-    constexpr const char* get_message(Not code) {
-        return Notices[static_cast<uint16_t>(code)];
+    static constexpr const char* get_message(Not code) {
+        return _notices[static_cast<uint16_t>(code)];
+    }
+    static constexpr const char* get_message(Var code) {
+        return _variables[static_cast<uint16_t>(code)];
     }
 
    protected:
+#define GENERATE_STRING(id, msg) msg,
+    static constexpr const char* const _units[] = {"Unamed",
+                                                   UNIT_LIST(GENERATE_STRING)};
+    static constexpr const char* const _severities[] = {
+        SEVERITY_LIST(GENERATE_STRING)};
+    static constexpr const char* const _notices[] = {
+        NOTICE_LIST(GENERATE_STRING)};
+    static constexpr const char* const _variables[] = {
+        VARIABLE_LIST(GENERATE_STRING)};
+#undef GENERATE_STRING
+#undef UNIT_LIST
+#undef SEVERITY_LIST
+#undef NOTICE_LIST
+#undef VARIABLE_LIST
+
     uint32_t unit_max;
 
     Messages() { unit_max = __builtin_ctz(static_cast<uint32_t>(Uni::Count)); }

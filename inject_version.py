@@ -9,7 +9,7 @@ from SCons.Script import (  # type: ignore[import,no-redef]  # noqa F811
 )
 from subprocess import check_output
 
-TAG = "E32C"
+TAG = "E32M"
 env = None  # type: ignore[var-annotated]
 
 Import("env")  # type: ignore[arg-type]
@@ -34,7 +34,7 @@ def get_git_tag_or_hash():
         # --tags: Look at all tags
         # --always: Fall back to the unique commit hash if no tags exist
         # --dirty: Append "-dirty" if there are uncommitted local changes
-        cmd = ["git", "describe", "--tags", "--always", "--dirty"]
+        cmd = ["git", "describe", "--tags", "--dirty"]
         version = check_output(cmd).decode("utf-8").strip()
         return version
     except Exception:

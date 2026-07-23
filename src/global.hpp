@@ -3,17 +3,30 @@
 #ifdef ARDUINO
 
 #include <Arduino.h>
-#define LOG_E(x, y) output.handle(x, y, __FILE__, __LINE__)
-#define DEBUG(X) do { SER.print(X) ; SER.printf(" %s:%d\n", __FILE__, __LINE__); } while (0)
+#define DEBUG(X)                                    \
+    do {                                            \
+        SER.print(X);                               \
+        SER.printf(" %s:%d\n", __FILE__, __LINE__); \
+    } while (0)
 
 #else
 
 #include <cstdint>
 #include <iostream>
 
-#define LOG_E(x, y) output.handle(x, y, __FILE__, __LINE__)
-#define DEBUG(X) std::cout << X << " " << __FILE__ << ":" << __LINE__ << std::endl
+#include "native/native.hpp"
 
-#endif   // ARDUINO !ARDUINO
+#define DEBUG(X) \
+    std::cout << X << " " << __FILE__ << ":" << __LINE__ << std::endl
+
+#endif  // ARDUINO !ARDUINO
+
+#define LOG_ED(E, C) output.handle(E, C, __FILE__, __LINE__)
+#define LOG_ND(U, S, N, C) output.handle(U, S, N, C, __FILE__, __LINE__)
+#define DATAD(N, V, B) output.handle(N, V, B)
+
+// #define LOG_EQ(E, CI) output.handle(E, C, __FILE__, __LINE__)
+// #define LOG_NQ(U, S, N, CI) output.handle(U, S, N, C, __FILE__, __LINE__)
+// #define DATAQ(N, V) output.handle(N, V)
 
 #include "util/util.hpp"

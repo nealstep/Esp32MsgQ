@@ -68,13 +68,13 @@ class Modules {
         else return nullptr;
     }
     static constexpr const char* get_tname(Typ code) {
-        return _Types[static_cast<uint8_t>(code)];
+        return _types[static_cast<uint8_t>(code)];
     }
 
    protected:
    // generated constants
 #define GENERATE_STRING(id, msg) msg,
-    static constexpr const char* const _Types[] = {TYPE_LIST(GENERATE_STRING)};
+    static constexpr const char* const _types[] = {TYPE_LIST(GENERATE_STRING)};
 #undef GENERATE_STRING
 #undef TYPE_LIST
 

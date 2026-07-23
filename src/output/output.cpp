@@ -66,3 +66,21 @@ Output::Err Output::_get_timestamp(time_t asof, char* buffer, size_t len) {
     }
     return err;
 }
+
+void Output::_handle(const char* dv_s, bool broadcast) {
+    char data_s[output_size];
+    char ts_s[Output::timestamp_size];
+    Err err = _get_timestamp(time(NULL), ts_s, sizeof(ts_s));
+    if (err != Err::NoErr) {
+        print("Error in data handler at _get_timestamp, Aborting");
+        return;
+    }
+    int len = snprintf(data_s, sizeof(data_s), data_fmt,
+                       get_output(Output::Dat), dv_s, ts_s);
+    if (len < 0) {
+        print("Error in data handler at snprintf data format, Aborting");
+        return;
+    } else if (len >= sizeof(data_s))
+        print("Error in data handler at snprintf data truncated");
+    print(data_s);
+}
