@@ -1,6 +1,7 @@
 #include "global.hpp"
 #include "modules/m_s_dummy.hpp"
 #include "output/output.hpp"
+#include "prefs/prefs.hpp"
 #include "queuer/queuer.hpp"
 #include "version.h"
 
@@ -39,6 +40,7 @@ void log_diagnostics(void) {
 }
 
 void setup() {
+    prefs.begin(PREFS_NAME, false);
 #ifdef SER
     SER.begin(SERIAL_SPEED);
     delay(startup_delay);
@@ -53,6 +55,7 @@ void setup() {
     log_version();
     log_diagnostics();
 
+    prefs.end();
     LOG_ND(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Started,
            Output::Context("setup"));
     LOG_ED(Output::Err::NoMod, Output::Context("test"));

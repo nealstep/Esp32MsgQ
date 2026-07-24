@@ -29,6 +29,9 @@ class Output {
     static constexpr const uint8_t timestamp_size = 32;
     static constexpr const uint8_t data_size = 64;
 
+    static constexpr const uint8_t contexts_max = 12;
+    static constexpr const uint8_t context_exhausted = 0xFF;
+
     static constexpr const char* const reading_fmt_u = "%c|%s|%s|%u|%s";
     static constexpr const char* const reading_fmt_f = "%c|%s|%s|%f|%s";
     static constexpr const char* const error_fmt = "%c|%s|%s|%s:%d|%s";
@@ -43,8 +46,13 @@ class Output {
        public:
         static constexpr const uint8_t name_size = 32;
 
+        Context() { _name[0] = '\0'; }
         Context(const char* name) { strlcpy(_name, name, sizeof(_name)); }
+
         const char* get_name(void) { return _name; }
+
+        // we can add to this over time
+        const char* get_str(void) { return get_name(); }
 
        protected:
         char _name[name_size];
@@ -106,6 +114,30 @@ class Output {
         return _errors[static_cast<uint8_t>(err)];
     }
 
+    uint8_t get_next_context() {
+        uint8_t ind = 0;
+        while (ind < contexts_max) {
+            if (context_free[ind]) {
+                context_free[ind] = false;
+                return ind;
+            }
+            ind++;
+        }
+        return context_exhausted;
+    }
+
+    Context* get_context(uint8_t ind) {
+        if (context_free[ind]) {
+            print("Error in error, requested a context that is not in use");
+            return nullptr;
+        } else if (ind >= contexts_max) {
+            // invalid
+        }
+        return &contexts[ind];
+    }
+
+    void free_context(uint8_t ind) { context_free[ind] = true; }
+
    protected:
 #define GENERATE_STRING(id, msg) msg,
     static constexpr const char _outputs[] = {OUTPUT_LIST(GENERATE_STRING)};
@@ -115,8 +147,15 @@ class Output {
 #undef OUTPUT_LIST
 #undef ERROR_LIST
 
+    Context contexts[contexts_max];
+    bool context_free[contexts_max];
+    uint8_t context_ind = 0;
+
     // hidden creator
-    Output(void) {};
+    Output(void) {
+        for (uint8_t ind = 0; ind < contexts_max; ind++)
+            context_free[ind] = true;
+    };
 
     Err _get_timestamp(time_t asof, char* buffer, size_t len);
     void _handle(const char* err_m, Context ctx, const char* fname, int line);
