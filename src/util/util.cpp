@@ -4,7 +4,9 @@
 #include <iostream>
 #endif  // !ARDUINO
 
+// TODO: #8 move die to output
 void die(void) {
+    // TODO: #5 network print die
 #ifdef ARDUINO
 #ifdef SER
     SER.println("Died");  // OK

@@ -19,6 +19,10 @@ static constexpr const uint32_t million = 1000000;
 M_S_Dummy m_s_dummy(1, 1);
 #endif  // M_S_DUMMY
 
+void log_name(void) {
+    // TODO: #2 log_name
+}
+
 void log_version(void) {
     DATAD(Messages::Var::GitVer, E32M_GIT_VERSION, false);
     DATAD(Messages::Var::FirmVer, E32M_FIRMWARE_VERSION, false);
@@ -61,25 +65,34 @@ void setup() {
 #endif  // SER
     LOG_ND(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Start,
            Output::Context("setup"));
-
-    output.print(m_s_dummy.get_name());
+    DATAD(Messages::Var::MsgId, output.msgid, false);
 
     // display version
     delay(tiny_delay);
+    log_name();
     log_version();
     log_diagnostics();
 
+    // init network
+    // TODO: #3 Network init
+
+    // enable scheduler
+    // TODO: #6 implement sceduler
+
     prefs.end();
+    delay(tiny_delay);
     LOG_ND(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Started,
            Output::Context("setup"));
-    LOG_ED(Output::Err::NoMod, Output::Context("test"));
-    LOG_ED(Module::Err::NotEn, Output::Context("test"));
+    // LOG_ED(Output::Err::NoMod, Output::Context("test"));
+    // LOG_ED(Module::Err::NotEn, Output::Context("test"));
 }
 
 void loop() {
 #ifdef ARDUINO
 // TBD
 #else
+    // TODO: #7 implement simple timing sceduler native
+
     if (rand() % CHANCE == 0)
         if (rand() % CHANCE == 0) {
             Module::Err err = m_s_dummy.get_control(M_S_Dummy::Con::S1);

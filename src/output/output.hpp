@@ -30,6 +30,7 @@ class Output {
     static constexpr const uint8_t timestamp_size = 32;
     static constexpr const uint8_t data_size = 64;
     static constexpr const uint8_t filename_size = 32;
+    static constexpr const uint8_t chipid_size = 17;
 
     static constexpr const uint8_t contexts_max = 12;
     static constexpr const uint8_t context_exhausted = 0xFF;
@@ -72,9 +73,23 @@ class Output {
         int line;
     };
 
+    // serial parameters
     bool use_serial = false;
     bool serial_rdy = false;
     uint32_t serial_speed;
+
+// chip info
+#ifdef ARDUINO_ARCH_ESP32
+    uint64_t chipid = ESP.getEfuseMac();
+#endif  // ARDUINO_ARCH_ESP32
+#ifndef ARDUINO
+    uint64_t chipid = CHIP_ID;
+#endif  // !ARDUINO
+    char chipid_s[chipid_size];
+
+    // message pseudo index
+    uint32_t msgid = 0;
+
 
     // lazy singleton
     static Output& getInstance(void) {
@@ -129,7 +144,9 @@ class Output {
 #else                                      // !ARDUINO
         std::cout << str << std::endl;  // OK
 #endif                                     // ARDUINO !ARDIUNO
+// TODO: #4 network print
     }
+    
     static constexpr const char get_output(Out out) { return _outputs[out]; }
     static constexpr const char* get_error(Err err) {
         return _errors[static_cast<uint8_t>(err)];
@@ -174,6 +191,16 @@ class Output {
 
     // hidden creator
     Output(void) {
+        // set_unit_mask(DEF_UNIT);
+        // set_severity(DEF_SEVERITY);
+        // get unique name for chip
+        snprintf(chipid_s, sizeof(chipid_s), "%04X%08X",
+                 (uint16_t)(chipid >> 32), (uint32_t)chipid);
+        // get likely unique message id
+        #ifdef ARDUINO_ARCH_ESP32
+        msgid = esp_random();
+        #endif // ARDUINO_ARCH_ESP32
+        if (msgid == 0) msgid = 1;  // reserve msgid 0
         for (uint8_t ind = 0; ind < contexts_max; ind++)
             context_free[ind] = true;
     };

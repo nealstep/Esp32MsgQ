@@ -25,6 +25,7 @@
 #define LOG_ND(U, S, N, C) output.handle(U, S, N, C, __FILE__, __LINE__)
 #define DATAD(N, V, B) output.handle(N, V, B)
 
+// TODO:: #1 queued messages
 // #define LOG_EQ(E, CI) output.handle(E, C, __FILE__, __LINE__)
 // #define LOG_NQ(U, S, N, CI) output.handle(U, S, N, C, __FILE__, __LINE__)
 // #define DATAQ(N, V) output.handle(N, V)

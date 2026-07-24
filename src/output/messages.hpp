@@ -15,14 +15,15 @@
     X(Start, "Starting")     \
     X(Started, "Started")
 
-#define VARIABLE_LIST(X)                \
+#define VARIABLE_LIST(X)            \
     X(GitVer, "Git Version")        \
     X(FirmVer, "Firmware Verstion") \
-    X(BuildTime, "Build Time")          \
-    X(BuildID, "Build ID")              \
-    X(CPUF, "CPU Freq (Mhz)")           \
-    X(FlshF, "Flash Freq (Mhz)")        \
-    X(Heap, "Free Heap (bytes)")
+    X(BuildTime, "Build Time")      \
+    X(BuildID, "Build ID")          \
+    X(CPUF, "CPU Freq (Mhz)")       \
+    X(FlshF, "Flash Freq (Mhz)")    \
+    X(Heap, "Free Heap (bytes)")    \
+    X(MsgId, "Message ID")
 
 #define WORD_LIST(X)      \
     X(Unknown, "Unknown") \
