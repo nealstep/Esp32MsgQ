@@ -11,6 +11,7 @@ class Preferences {
     bool begin(const char* name, bool read_only) { return false; }
     bool isKey(const char* key) { return false; }
     bool getBool(const char* key) { return false; }
+    bool getUInt(const char* key) { return 0; }
     void end() {}
 };
 

@@ -6,10 +6,12 @@
 
 void die(void) {
 #ifdef ARDUINO
-    SER.println("Died"); // OK
+#ifdef SER
+    SER.println("Died");  // OK
+#endif                    // SER
     while (true) delay(50);
 #else
-    std::cout << "Died" << std::endl; // OK
+    std::cout << "Died" << std::endl;  // OK
     exit(1);
 #endif  // ARDUINO !ARDUINO
 }

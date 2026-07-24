@@ -63,11 +63,13 @@ class Prefs {
     bool check_type(Prf prf, DType dty) { return get_dtype(prf) == dty; }
 
     Err get_pref(Prf prf, bool& val);
+    Err get_pref(Prf prf, uint32_t& val);
 
     Err get_pref(Prf prf, char* buf, size_t buf_len);
 
     Err set_pref(Prf prf, bool val);
 
+    Err set_pref(Prf prf, uint32_t val);
     Err set_pref(Prf prf, const char* buf);
 
    protected:

@@ -42,8 +42,22 @@ void log_diagnostics(void) {
 void setup() {
     prefs.begin(PREFS_NAME, false);
 #ifdef SER
-    SER.begin(SERIAL_SPEED);
-    delay(startup_delay);
+    Prefs::Err err = prefs.get_pref(Prefs::Prf::UsSer, output.use_serial);
+    if (err != Prefs::Err::NoErr) {
+        LOG_EQ(err, Output::Context("prefs use_serial"));
+        output.use_serial = true;
+    }
+    if (output.use_serial) {
+        Prefs::Err err =
+            prefs.get_pref(Prefs::Prf::SerSpd, output.serial_speed);
+        if (err != Prefs::Err::NoErr) {
+            LOG_EQ(err, Output::Context("prefs serial_speed"));
+            output.serial_speed = SERIAL_SPEED;
+        }
+        SER.begin(SERIAL_SPEED);
+        delay(startup_delay);
+        output.serial_rdy = true;
+    }
 #endif  // SER
     LOG_ND(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Start,
            Output::Context("setup"));

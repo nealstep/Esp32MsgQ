@@ -2,6 +2,7 @@
 
 #include "messages.hpp"
 #include "modules/module.hpp"
+#include "prefs/prefs.hpp"
 
 #define OUTPUT_LIST(X) \
     X(Rdg, '@')        \
@@ -28,6 +29,7 @@ class Output {
     static constexpr const uint8_t output_size = 128;
     static constexpr const uint8_t timestamp_size = 32;
     static constexpr const uint8_t data_size = 64;
+    static constexpr const uint8_t filename_size = 32;
 
     static constexpr const uint8_t contexts_max = 12;
     static constexpr const uint8_t context_exhausted = 0xFF;
@@ -58,6 +60,22 @@ class Output {
         char _name[name_size];
     };
 
+    struct ErrEnt {
+        enum EType : uint8_t { Out, Mod, Pref } etype;
+        union {
+            Output::Err out;
+            Module::Err mod;
+            Prefs::Err pref;
+        } err;
+        Context* ctx;
+        char file[filename_size];
+        int line;
+    };
+
+    bool use_serial = false;
+    bool serial_rdy = false;
+    uint32_t serial_speed;
+
     // lazy singleton
     static Output& getInstance(void) {
         static Output instance;
@@ -72,6 +90,9 @@ class Output {
     }
     void handle(Module::Err err, Context ctx, const char* fname, int line) {
         _handle(Module::get_error(err), ctx, fname, line);
+    }
+    void handle(Prefs::Err err, Context ctx, const char* fname, int line) {
+        _handle(Prefs::get_error(err), ctx, fname, line);
     }
     void handle(Messages::Uni uni, Messages::Sev sev, Messages::Not notice,
                 Context ctx, const char* fname, int line) {}
@@ -103,11 +124,11 @@ class Output {
     void print(const char* str) {
 #ifdef ARDUINO
 #ifdef SER
-        SER.println(str);  // OK
-#endif                     // SER
-#else                      // !ARDUINO
+        if (serial_rdy) SER.println(str);  // OK
+#endif                                     // SER
+#else                                      // !ARDUINO
         std::cout << str << std::endl;  // OK
-#endif                     // ARDUINO !ARDIUNO
+#endif                                     // ARDUINO !ARDIUNO
     }
     static constexpr const char get_output(Out out) { return _outputs[out]; }
     static constexpr const char* get_error(Err err) {
