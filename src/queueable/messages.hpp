@@ -28,7 +28,7 @@
 #define WORD_LIST(X)      \
     X(Unknown, "Unknown") \
     X(Invalid, "Invalid") \
-    X(NoTime, "NoTime") \
+    X(NoTime, "NoTime")   \
     X(Empty, "Empty")
 
 #define SEVERITY_LIST(X) \
@@ -96,9 +96,6 @@ class Messages {
     }
     static constexpr const char* get_message(Var code) {
         return _variables[static_cast<uint16_t>(code)];
-    }
-    static constexpr const char* get_message(Word code) {
-        return _words[static_cast<uint16_t>(code)];
     }
 
    protected:
