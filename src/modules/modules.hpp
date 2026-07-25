@@ -1,6 +1,9 @@
 #pragma once
 
 #include "global.hpp"
+#include "output/output.hpp"
+#include "queueable/error.hpp"
+#include "queueable/readings.hpp"
 
 #ifndef ARDUINO
 #include <cstring>
@@ -11,10 +14,6 @@
     X(Sensor, "S")   \
     X(Control, "C")  \
     X(Other, "O")
-
-// types for clarity
-typedef uint8_t modules_t;
-typedef uint8_t controls_t;
 
 class Module;
 
@@ -31,19 +30,6 @@ class Modules {
     static constexpr const uint8_t name_size = 32;
     static constexpr const uint8_t reading_name_size = 8;
     static constexpr const char* const name_fmt = "%s.%s.%u.%u";
-    enum class Payload : uint8_t { U8, FLOAT };
-
-    // reading sturcture
-    typedef struct {
-        modules_t mid;
-        controls_t cid;
-        time_t asof;
-        Payload payload;
-        union {
-            uint8_t u8;
-            float f;
-        } value;
-    } Reading;
 
     // lazy singleton
     static Modules& getInstance(void) {
@@ -56,23 +42,27 @@ class Modules {
     // functions
     modules_t add(Module* mod_p) {
         modules_t mid = _modules_ind;
-        if (_modules_ind < modules_max)
+        if (_modules_ind < modules_max) {
             _modules[_modules_ind++] = mod_p;
-        else
+        } else {
+            LOG_ED(Error::Err::ModMax, "add");
             die();
+        }
         return mid;
     }
+
     Module* get_module(modules_t mid) {
         if (mid < _modules_ind)
             return _modules[mid];
-        else return nullptr;
+        else
+            return nullptr;
     }
     static constexpr const char* get_tname(Typ code) {
         return _types[static_cast<uint8_t>(code)];
     }
 
    protected:
-   // generated constants
+    // generated constants
 #define GENERATE_STRING(id, msg) msg,
     static constexpr const char* const _types[] = {TYPE_LIST(GENERATE_STRING)};
 #undef GENERATE_STRING
@@ -80,10 +70,10 @@ class Modules {
 
     // variables
     Module* _modules[modules_max];
-    modules_t _modules_ind;
+    modules_t _modules_ind = 0;
 
     // hidden creator
-    Modules(void) : _modules_ind(0) {}
+    Modules(void) {}
 };
 
 static Modules& modules = Modules::getInstance();

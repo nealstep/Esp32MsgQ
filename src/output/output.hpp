@@ -1,8 +1,9 @@
 #pragma once
 
-#include "messages.hpp"
-#include "modules/module.hpp"
-#include "prefs/prefs.hpp"
+#include "global.hpp"
+#include "queueable/error.hpp"
+#include "queueable/messages.hpp"
+#include "queueable/readings.hpp"
 
 #define OUTPUT_LIST(X) \
     X(Rdg, '@')        \
@@ -10,30 +11,19 @@
     X(Erm, '!')        \
     X(Dat, '$')
 
-#define ERROR_LIST(X)           \
-    X(NoErr, "No Error")        \
-    X(Ovr, "Overrun")           \
-    X(UnPay, "Unknown Payload") \
-    X(NoMod, "No Module")       \
-    X(Form, "Format Error")     \
-    X(Trunc, "Truncated")       \
-    X(EiE, "Error In Error")
+void die(void);
 
 class Output {
    public:
 #define GENERATE_ENUM(id, msg) id,
     enum Out : uint8_t { OUTPUT_LIST(GENERATE_ENUM) Count };
-    enum class Err : uint8_t { ERROR_LIST(GENERATE_ENUM) Count };
 #undef GENERATE_ENUM
 
     static constexpr const uint8_t output_size = 128;
     static constexpr const uint8_t timestamp_size = 32;
+    static constexpr const uint8_t context_size = 64;
     static constexpr const uint8_t data_size = 64;
-    static constexpr const uint8_t filename_size = 32;
     static constexpr const uint8_t chipid_size = 17;
-
-    static constexpr const uint8_t contexts_max = 12;
-    static constexpr const uint8_t context_exhausted = 0xFF;
 
     static constexpr const char* const reading_fmt_u = "%c|%s|%s|%u|%s";
     static constexpr const char* const reading_fmt_f = "%c|%s|%s|%f|%s";
@@ -44,34 +34,6 @@ class Output {
     static constexpr const char* const data_s_s = "%s|%s";
 
     static constexpr const char* const no_time = "NoTime";
-
-    class Context {
-       public:
-        static constexpr const uint8_t name_size = 32;
-
-        Context() { _name[0] = '\0'; }
-        Context(const char* name) { strlcpy(_name, name, sizeof(_name)); }
-
-        const char* get_name(void) { return _name; }
-
-        // we can add to this over time
-        const char* get_str(void) { return get_name(); }
-
-       protected:
-        char _name[name_size];
-    };
-
-    struct ErrEnt {
-        enum EType : uint8_t { Out, Mod, Pref } etype;
-        union {
-            Output::Err out;
-            Module::Err mod;
-            Prefs::Err pref;
-        } err;
-        Context* ctx;
-        char file[filename_size];
-        int line;
-    };
 
     // serial parameters
     bool use_serial = false;
@@ -90,7 +52,6 @@ class Output {
     // message pseudo index
     uint32_t msgid = 0;
 
-
     // lazy singleton
     static Output& getInstance(void) {
         static Output instance;
@@ -99,18 +60,12 @@ class Output {
     Output(const Output&) = delete;
     Output& operator=(const Output&) = delete;
 
-    Err handle(Modules::Reading reading);
-    void handle(Err err, Context ctx, const char* fname, int line) {
-        _handle(get_error(err), ctx, fname, line);
-    }
-    void handle(Module::Err err, Context ctx, const char* fname, int line) {
-        _handle(Module::get_error(err), ctx, fname, line);
-    }
-    void handle(Prefs::Err err, Context ctx, const char* fname, int line) {
-        _handle(Prefs::get_error(err), ctx, fname, line);
+    Error::Err handle(Readings::Entry reading);
+    void handle(Error::Err err, const char* name, const char* fname, int line) {
+        _handle(Error::get_error(err), name, fname, line);
     }
     void handle(Messages::Uni uni, Messages::Sev sev, Messages::Not notice,
-                Context ctx, const char* fname, int line) {}
+                const char* name, const char* fname, int line) {}
 
     void handle(Messages::Var var, uint32_t val, bool broadcast = false) {
         char dv_s[data_size];
@@ -144,50 +99,16 @@ class Output {
 #else                                      // !ARDUINO
         std::cout << str << std::endl;  // OK
 #endif                                     // ARDUINO !ARDIUNO
-// TODO: #4 network print
+                                           // TODO: #4 network print
     }
-    
+
     static constexpr const char get_output(Out out) { return _outputs[out]; }
-    static constexpr const char* get_error(Err err) {
-        return _errors[static_cast<uint8_t>(err)];
-    }
-
-    uint8_t get_next_context() {
-        uint8_t ind = 0;
-        while (ind < contexts_max) {
-            if (context_free[ind]) {
-                context_free[ind] = false;
-                return ind;
-            }
-            ind++;
-        }
-        return context_exhausted;
-    }
-
-    Context* get_context(uint8_t ind) {
-        if (context_free[ind]) {
-            print("Error in error, requested a context that is not in use");
-            return nullptr;
-        } else if (ind >= contexts_max) {
-            // invalid
-        }
-        return &contexts[ind];
-    }
-
-    void free_context(uint8_t ind) { context_free[ind] = true; }
 
    protected:
 #define GENERATE_STRING(id, msg) msg,
     static constexpr const char _outputs[] = {OUTPUT_LIST(GENERATE_STRING)};
-    static constexpr const char* const _errors[] = {
-        ERROR_LIST(GENERATE_STRING)};
 #undef GENERATE_STRING
 #undef OUTPUT_LIST
-#undef ERROR_LIST
-
-    Context contexts[contexts_max];
-    bool context_free[contexts_max];
-    uint8_t context_ind = 0;
 
     // hidden creator
     Output(void) {
@@ -196,18 +117,21 @@ class Output {
         // get unique name for chip
         snprintf(chipid_s, sizeof(chipid_s), "%04X%08X",
                  (uint16_t)(chipid >> 32), (uint32_t)chipid);
-        // get likely unique message id
-        #ifdef ARDUINO_ARCH_ESP32
+// get likely unique message id
+#ifdef ARDUINO_ARCH_ESP32
         msgid = esp_random();
-        #endif // ARDUINO_ARCH_ESP32
+#endif                              // ARDUINO_ARCH_ESP32
         if (msgid == 0) msgid = 1;  // reserve msgid 0
-        for (uint8_t ind = 0; ind < contexts_max; ind++)
-            context_free[ind] = true;
     };
 
-    Err _get_timestamp(time_t asof, char* buffer, size_t len);
-    void _handle(const char* err_m, Context ctx, const char* fname, int line);
+    Error::Err _get_timestamp(time_t asof, char* buffer, size_t len);
+    void _handle(const char* err_m, const char* name, const char* fname,
+                 int line);
     void _handle(const char* data_s, bool broadcast);
 };
 
 static Output& output = Output::getInstance();
+
+#define LOG_ED(E, N) output.handle(E, N, __FILE__, __LINE__)
+#define LOG_MD(U, S, M, N) output.handle(U, S, M, N, __FILE__, __LINE__)
+#define DATAD(N, V, B) output.handle(N, V, B)

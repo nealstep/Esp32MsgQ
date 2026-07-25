@@ -17,9 +17,9 @@ class M_S_Dummy : public Module {
 
     M_S_Dummy(uint8_t loc, uint8_t id) : Module(typ, kind, loc, id) {}
 
-    Err get_control(controls_t cid) override {
-        if (!_enabled) return Module::Err::NotEn;
-        Modules::Reading reading;
+    Error::Err get_control(controls_t cid) override {
+        if (!_enabled) return Error::Err::NotEn;
+        Readings::Entry reading;
         if (cid == Con::S1) {
 #ifdef ARDUINO
             uint8_t value = random(0, 100);
@@ -30,12 +30,14 @@ class M_S_Dummy : public Module {
             reading.mid = _mid;
             reading.cid = cid;
             reading.asof = time(NULL);
-            reading.payload = Modules::Payload::U8;
+            reading.payload = Readings::Payload::U8;
             reading.value.u8 = value;
         } else {
-            return Module::Err::NoCon;
+            return Error::Err::NoCon;
         }
-        return _queue_reading(reading);
+        if (readings.queue.push(reading)) 
+            return Error::Err::QErr;
+        return Error::Err::NoErr;
     }
     const char* get_control_name(controls_t con) override { return _controls[con]; }
 
