@@ -1,7 +1,7 @@
 #include "prefs.hpp"
 
-Prefs::Err Prefs::get_pref(Prf prf, bool& val) {
-    Err err = Err::NoErr;
+Error::Err Prefs::get_pref(Prf prf, bool& val) {
+    Error::Err err = Error::Err::NoErr;
     const char* key = get_key(prf);
     if (preferences.isKey(key)) {
         if (check_type(prf, DType::BOOL)) {
@@ -11,17 +11,16 @@ Prefs::Err Prefs::get_pref(Prf prf, bool& val) {
             }
 #endif  // ARDUINO_ARCH_ESP32
             val = preferences.getBool(key);
-            err = Err::NoErr;
+            err = Error::Err::NoErr;
         } else
-            err = Err::BdTy;
+            err = Error::Err::BdTy;
     } else
-        err = Err::NotFnd;
+        err = Error::Err::NotFnd;
     return err;
 }
 
-
-Prefs::Err Prefs::get_pref(Prf prf, uint32_t& val) {
-    Err err = Err::NoErr;
+Error::Err Prefs::get_pref(Prf prf, uint32_t& val) {
+    Error::Err err = Error::Err::NoErr;
     const char* key = get_key(prf);
     if (preferences.isKey(key)) {
         if (check_type(prf, DType::U32)) {
@@ -31,17 +30,17 @@ Prefs::Err Prefs::get_pref(Prf prf, uint32_t& val) {
             }
 #endif  // ARDUINO_ARCH_ESP32
             val = preferences.getUInt(key);
-            err = Err::NoErr;
+            err = Error::Err::NoErr;
         } else
-            err = Err::BdTy;
+            err = Error::Err::BdTy;
     } else
-        err = Err::NotFnd;
+        err = Error::Err::NotFnd;
     return err;
 }
 
 
-Prefs::Err Prefs::get_pref(Prf prf, char* buf, size_t buf_len) {
-    Err err = Err::NoErr;
+Error::Err Prefs::get_pref(Prf prf, char* buf, size_t buf_len) {
+    Error::Err err = Error::Err::NoErr;
     const char* key = get_key(prf);
     // if (check_type(prf, DType::STR)) {
     //     size_t len = preferences.getString(key, buffer, buf_len);
@@ -52,18 +51,18 @@ Prefs::Err Prefs::get_pref(Prf prf, char* buf, size_t buf_len) {
     return err;
 }
 
-Prefs::Err Prefs::set_pref(Prf prf, bool val) {
-    Err err = Err::NoErr;
+Error::Err Prefs::set_pref(Prf prf, bool val) {
+    Error::Err err = Error::Err::NoErr;
     return err;
 }
 
-Prefs::Err Prefs::set_pref(Prf prf, uint32_t val) {
-    Err err = Err::NoErr;
+Error::Err Prefs::set_pref(Prf prf, uint32_t val) {
+    Error::Err err = Error::Err::NoErr;
     return err;
 }
 
 
-Prefs::Err Prefs::set_pref(Prf prf, const char* buf) {
-    Err err = Err::NoErr;
+Error::Err Prefs::set_pref(Prf prf, const char* buf) {
+    Error::Err err = Error::Err::NoErr;
     return err;
 }

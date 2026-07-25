@@ -2,7 +2,6 @@
 #include "modules/m_s_dummy.hpp"
 #include "output/output.hpp"
 #include "prefs/prefs.hpp"
-#include "queuer/queuer.hpp"
 #include "version.h"
 
 #ifdef ARDUINO
@@ -63,8 +62,8 @@ void setup() {
         output.serial_rdy = true;
     }
 #endif  // SER
-    LOG_ND(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Start,
-           Output::Context("setup"));
+    LOG_MD(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Start,
+           "setup");
     DATAD(Messages::Var::MsgId, output.msgid, false);
 
     // display version
@@ -81,8 +80,8 @@ void setup() {
 
     prefs.end();
     delay(tiny_delay);
-    LOG_ND(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Started,
-           Output::Context("setup"));
+    LOG_MD(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Started,
+           "setup");
     // LOG_ED(Output::Err::NoMod, Output::Context("test"));
     // LOG_ED(Module::Err::NotEn, Output::Context("test"));
 }
@@ -95,17 +94,17 @@ void loop() {
 
     if (rand() % CHANCE == 0)
         if (rand() % CHANCE == 0) {
-            Module::Err err = m_s_dummy.get_control(M_S_Dummy::Con::S1);
-            if (err != Module::Err::NoErr)
-                LOG_ED(err, Output::Context("m_s_dummy.get_control"));
+            Error::Err err = m_s_dummy.get_control(M_S_Dummy::Con::S1);
+            if (err != Error::Err::NoErr)
+                LOG_ED(err, "m_s_dummy.get_control");
         }
 #endif  // ARDUINO !ARDUINO
 
-    Modules::Reading reading;
-    while (queuer.pop(Queuer::Queues::Rdgs, reading)) {
-        Output::Err err = output.handle(reading);
-        if (err != Output::Err::NoErr)
-            LOG_ED(err, Output::Context("m_s_dummy.get_control"));
+    Readings::Entry reading;
+    while (readings.queue.pop(reading)) {
+        Error::Err err = output.handle(reading);
+        if (err != Error::Err::NoErr)
+            LOG_ED(err, "m_s_dummy.get_control");
     }
 }
 

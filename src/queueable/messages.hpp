@@ -119,3 +119,5 @@ class Messages {
 };
 
 static Messages& messages = Messages::getInstance();
+
+// #define LOG_MQ(U, S, N, CI) output.handle(U, S, N, C, __FILE__, __LINE__)

@@ -21,9 +21,7 @@
 
 #endif  // ARDUINO !ARDUINO
 
-#define LOG_ED(E, C) output.handle(E, C, __FILE__, __LINE__)
-#define LOG_ND(U, S, N, C) output.handle(U, S, N, C, __FILE__, __LINE__)
-#define DATAD(N, V, B) output.handle(N, V, B)
+
 
 // TODO:: #1 queued messages
 // #define LOG_EQ(E, CI) output.handle(E, C, __FILE__, __LINE__)
