@@ -34,6 +34,7 @@ class Datum {
     Datum(const Datum&) = delete;
     Datum& operator=(const Datum&) = delete;
 
+    // TODO: #16 implement queued Data
     void add(Messages::Var var, uint8_t val, bool broadcast) {}
     void add(Messages::Var var, const char* val, bool broadcast) {}
 
