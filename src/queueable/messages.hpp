@@ -121,4 +121,5 @@ class Messages {
 
 static Messages& messages = Messages::getInstance();
 
+// TODO: #15 implement queued messages
 // #define LOG_MQ(U, S, N, CI) output.handle(U, S, N, C, __FILE__, __LINE__)

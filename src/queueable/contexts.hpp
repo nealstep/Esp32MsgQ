@@ -10,8 +10,8 @@ typedef uint8_t cid_t;
 
 class Contexts {
    public:
-    static constexpr const cid_t contexts_max = 12;
-    static constexpr const cid_t contexts_exhausted = 0xFF;
+    static constexpr const cid_t context_max = 12;
+    static constexpr const cid_t context_exhausted = 0xFF;
 
     class Context {
        public:
@@ -72,35 +72,35 @@ class Contexts {
 
     cid_t get_next_context() {
         cid_t ind = 0;
-        while (ind < contexts_max) {
-            if (context_free[ind]) {
-                context_free[ind] = false;
+        while (ind < context_max) {
+            if (_context_free[ind]) {
+                _context_free[ind] = false;
                 return ind;
             }
             ind++;
         }
-        return contexts_exhausted;
+        return context_exhausted;
     }
 
     Context* get_context(cid_t ind) {
-        if (context_free[ind]) {
+        if (_context_free[ind]) {
             return nullptr;
-        } else if (ind >= contexts_max) {
+        } else if (ind >= context_max) {
             // invalid
         }
-        return &contexts[ind];
+        return &_context[ind];
     }
 
-    void free_context(cid_t ind) { context_free[ind] = true; }
+    void free_context(cid_t ind) { _context_free[ind] = true; }
 
    protected:
-    Context contexts[contexts_max];
-    bool context_free[contexts_max];
-    uint8_t context_ind = 0;
+    Context _context[context_max];
+    bool _context_free[context_max];
+    uint8_t _context_ind = 0;
 
     Contexts() {
-        for (uint8_t ind = 0; ind < contexts_max; ind++)
-            context_free[ind] = true;
+        for (uint8_t ind = 0; ind < context_max; ind++)
+            _context_free[ind] = true;
     }
 };
 

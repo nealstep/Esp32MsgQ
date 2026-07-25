@@ -46,12 +46,12 @@ class Error {
 
     void add(Err err, const char* name, const char* fname, int line) {
         cid_t cid = contexts.get_next_context();
-        if (cid <= Contexts::contexts_max) {
+        if (cid <= Contexts::context_max) {
             Contexts::Context* ctx = contexts.get_context(cid);
             if (ctx) {
                 if (ctx->set(name, fname, line)) {
                     cid_t cid2 = contexts.get_next_context();
-                    if (cid2 <= Contexts::contexts_max) {
+                    if (cid2 <= Contexts::context_max) {
                         Contexts::Context* ctx2 = contexts.get_context(cid);
                         if (ctx) {
                             ctx2->set("Error::err", __FILE__, __LINE__);
