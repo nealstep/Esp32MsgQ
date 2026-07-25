@@ -57,26 +57,23 @@ void Output::_handle(const char* err_m, const char* name, const char* fname,
     ctx.set(name, fname, line);
     Error::Err err = _get_timestamp(time(NULL), ts_s, sizeof(ts_s));
     if (err != Error::Err::NoErr) {
-        // TODO: #12 emit error message for get timestamp
-        print("Error in error handler at _get_timestamp, Aborting");
-        return;
+        LOG_EQ(err, "Output::_handle err _get_timestamp");
+        strlcpy(ts_s, Messages::Word::NoTime, sizeof(ts_s));
     }
     Contexts::Context::Err ctx_err = ctx.get_str(ctx_s, sizeof(ctx_s));
     if (ctx_err == Contexts::Context::Err::Format) {
-        // TODO: #11 emit error for ctx format error
-        strlcpy(ctx_s, Contexts::Context::empty, sizeof(ctx_s));
+        LOG_EQ(Error::Err::Form, "Output::_handle err ct.get_str");
+        strlcpy(ctx_s, Contexts::Context::context_empty, sizeof(ctx_s));
     } else if (ctx_err == Contexts::Context::Err::Trunc) {
-        // TODO: #9 emit error for tuncated context
+        LOG_EQ(Error::Err::Trunc, "Output::_handle ct.get_str");
     }
     int len = snprintf(err_s, sizeof(err_s), error_fmt, get_output(Output::Erm),
                        err_m, ctx_s, fname, line, ts_s);
     if (len < 0) {
-        // TODO: #10 emit error message sprintf format
-        print("Error in error handler at snprintf type format, Aborting");
+        LOG_EQ(Error::Err::Form, "Output::_handle err snprintf");
         return;
     } else if (len >= sizeof(err_s))
-        // TODO: emit error message sprintf truncated
-        print("Error in error handler at snprintf type truncated");
+        LOG_EQ(Error::Err::Trunc, "Output::_handle err snprintf");
     print(err_s);
 }
 
@@ -84,6 +81,7 @@ Error::Err Output::_get_timestamp(time_t asof, char* buffer, size_t len) {
     Error::Err err = Error::Err::NoErr;
     if (asof == 0) {
         size_t sz = strlcpy(buffer, no_time, len);
+        // this should not happen
         if (sz >= len) err = Error::Err::Ovr;
     } else {
         const struct tm* timeinfo = localtime(&asof);
@@ -98,15 +96,15 @@ void Output::_handle(const char* dv_s, bool broadcast) {
     char ts_s[Output::timestamp_size];
     Error::Err err = _get_timestamp(time(NULL), ts_s, sizeof(ts_s));
     if (err != Error::Err::NoErr) {
-        print("Error in data handler at _get_timestamp, Aborting");
-        return;
+        LOG_EQ(err, "Output::_handle data _get_timestamp");
+        strlcpy(ts_s, Messages::Word::NoTime, sizeof(ts_s));
     }
     int len = snprintf(data_s, sizeof(data_s), data_fmt,
                        get_output(Output::Dat), dv_s, ts_s);
     if (len < 0) {
-        print("Error in data handler at snprintf data format, Aborting");
+        LOG_EQ(Error::Err::Form, "Output::_handle data snprintf");
         return;
     } else if (len >= sizeof(data_s))
-        print("Error in data handler at snprintf data truncated");
+        LOG_EQ(Error::Err::Trunc, "Output::_handle data snprintf");
     print(data_s);
 }

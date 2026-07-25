@@ -19,7 +19,7 @@ class Contexts {
         static constexpr const uint8_t filename_size = 32;
 
         static constexpr const char* const context_fmt = "%s|%s:%d";
-        static constexpr const char* const empty = "-|-:-";
+        static constexpr const char* const context_empty = "-|-:-";
 
         enum class Err : uint8_t { NoErr, Format, Trunc };
 
