@@ -17,7 +17,11 @@ static constexpr const uint8_t number_size = 16;
 static constexpr const uint16_t startup_delay = 2000;
 static constexpr const uint8_t tiny_delay = 5;
 
-static constexpr const uint32_t loop_interval = 50000 - 1;
+#ifdef ARDUINO
+static constexpr const uint32_t loop_interval = 10000 - 1;
+#else // !ARDUINO
+static constexpr const uint32_t loop_interval = 10000000 - 1;
+#endif // ARDUINO !ARDUINO
 
 static constexpr const uint32_t million = 1000000;
 static constexpr const uint32_t thousand = 1000;
@@ -73,6 +77,9 @@ Task* tasks[] = {
 #else   // !ARDUINO
 static constexpr const time_t keep_alive_int = 5;
 static constexpr const time_t m_s_dummy_1_1_int = 15;
+
+time_t keep_alive_last = 0;
+time_t m_s_dummy_1_1_last = 0;
 #endif  // ARDUINO !ARDUINO
 
 void log_name(void) {
@@ -226,9 +233,16 @@ void loop() {
     runner.execute();
 #else
     time_t now = time(NULL);
-    if ((time_t % keep_alive_int) == 0) keepAliveMsg();
-    if ((time_t % m_s_dummy_1_1_int) == 0)
-        m_s_dummy_chk()
+    if (now != keep_alive_last)
+        if ((now % keep_alive_int) == 0) {
+            keep_alive_last = now;
+            keep_alive_msg();
+        }
+    if (now != m_s_dummy_1_1_last)
+        if ((now % m_s_dummy_1_1_int) == 0) {
+            m_s_dummy_1_1_last = now;
+            m_s_dummy_chk();
+        }
 #endif  // ARDUINO !ARDUINO
 
 #ifdef IS_M5

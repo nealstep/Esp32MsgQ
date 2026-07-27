@@ -2,9 +2,12 @@
 
 #ifndef ARDUINO
 
+#include <chrono>
+#include <thread>
+
 // impleement pretend preference
 void delay(uint32_t ms) {
-    for (uint32_t i=0 ; i < ms ; i++) {}
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
 #endif  // !ARDUINO
