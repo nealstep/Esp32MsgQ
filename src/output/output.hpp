@@ -30,8 +30,8 @@ class Output {
     static constexpr const char* const error_fmt = "%c|%s|%s|%s:%d|%s";
     static constexpr const char* const time_fmt = "%Y-%m-%d@%H:%M:%S-%Z";
     static constexpr const char* const data_fmt = "%c|%s|%s";
-    static constexpr const char* const data_s_u = "%s|%u";
-    static constexpr const char* const data_s_s = "%s|%s";
+    static constexpr const char* const data_s_u = "%s|%u|%s";
+    static constexpr const char* const data_s_s = "%s|%s|%s";
 
     static constexpr const char* const no_time = "NoTime";
 
@@ -64,7 +64,7 @@ class Output {
     void handle(Error::Err err, const char* name, const char* fname, int line) {
         _handle(Error::get_error(err), name, fname, line);
     }
-    void handle(Messages::Uni uni, Messages::Sev sev, Messages::Not notice,
+    void handle(Messages::Sec sect, Messages::Sev sev, Messages::Not notice,
                 const char* name, const char* fname, int line) {}
 
     void handle(Messages::Var var, uint32_t val, bool broadcast = false) {
@@ -82,7 +82,7 @@ class Output {
     void handle(Messages::Var var, const char* val, bool broadcast = false) {
         char dv_s[data_size];
         int len = snprintf(dv_s, sizeof(dv_s), data_s_s,
-                           Messages::get_message(var), val);
+                           Messages::get_message(var), val, Messages::get_unit(var));
         if (len < 0) {
             print("Error in data handler at snprintf format, Aborting");
             return;
@@ -112,7 +112,7 @@ class Output {
 
     // hidden creator
     Output(void) {
-        // set_unit_mask(DEF_UNIT);
+        // set_sect_mask(DEF_SECT);
         // set_severity(DEF_SEVERITY);
         // get unique name for chip
         snprintf(chipid_s, sizeof(chipid_s), "%04X%08X",
@@ -133,5 +133,5 @@ class Output {
 static Output& output = Output::getInstance();
 
 #define LOG_ED(E, N) output.handle(E, N, __FILE__, __LINE__)
-#define LOG_MD(U, S, M, N) output.handle(U, S, M, N, __FILE__, __LINE__)
+#define LOG_MD(Sc, Sv, M, N) output.handle(Sc, Sv, M, N, __FILE__, __LINE__)
 #define DATAD(N, V, B) output.handle(N, V, B)

@@ -13,6 +13,7 @@ static constexpr const uint16_t startup_delay = 2000;
 static constexpr const uint32_t tiny_delay = 5;
 
 static constexpr const uint32_t million = 1000000;
+static constexpr const uint32_t thousand = 1000;
 
 #ifdef M_S_DUMMY
 M_S_Dummy m_s_dummy(1, 1);
@@ -33,7 +34,7 @@ void log_diagnostics(void) {
 #ifdef ARDUINO
     DATAD(Messages::Var::CPUF, ESP.getCpuFreqMHz(), false);
     DATAD(Messages::Var::FlshF, ESP.getFlashChipSpeed() / million, false);
-    DATAD(Messages::Var::Heap, ESP.getFreeHeap(), false);
+    DATAD(Messages::Var::Heap, ESP.getFreeHeap() / thousand, false);
 #else
     uint16_t x = 1000;
     DATAD(Messages::Var::CPUF, x, false);
@@ -62,7 +63,7 @@ void setup() {
         output.serial_rdy = true;
     }
 #endif  // SER
-    LOG_MD(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Start,
+    LOG_MD(Messages::Sec::Main, Messages::Sev::All, Messages::Not::Start,
            "setup");
     DATAD(Messages::Var::MsgId, output.msgid, false);
 
@@ -80,7 +81,7 @@ void setup() {
 
     prefs.end();
     delay(tiny_delay);
-    LOG_MD(Messages::Uni::Main, Messages::Sev::All, Messages::Not::Started,
+    LOG_MD(Messages::Sec::Main, Messages::Sev::All, Messages::Not::Started,
            "setup");
     // LOG_ED(Output::Err::NoMod, Output::Context("test"));
     // LOG_ED(Module::Err::NotEn, Output::Context("test"));

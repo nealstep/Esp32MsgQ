@@ -32,6 +32,7 @@ class M_S_Dummy : public Module {
             reading.asof = time(NULL);
             reading.payload = Readings::Payload::U8;
             reading.value.u8 = value;
+            reading.unit = Readings::Unit::None;
         } else {
             return Error::Err::NoCon;
         }

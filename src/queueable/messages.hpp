@@ -2,7 +2,7 @@
 
 #include "global.hpp"
 
-#define UNIT_LIST(X) \
+#define SECT_LIST(X) \
     X(Main, "Main")  \
     X(Mods, "Mods")  \
     X(Mess, "Mess")  \
@@ -15,15 +15,16 @@
     X(Start, "Starting")     \
     X(Started, "Started")
 
-#define VARIABLE_LIST(X)            \
-    X(GitVer, "Git Version")        \
-    X(FirmVer, "Firmware Verstion") \
-    X(BuildTime, "Build Time")      \
-    X(BuildID, "Build ID")          \
-    X(CPUF, "CPU Freq (Mhz)")       \
-    X(FlshF, "Flash Freq (Mhz)")    \
-    X(Heap, "Free Heap (bytes)")    \
-    X(MsgId, "Message ID")
+// ideally units should align with Readings::units if they are the same
+#define VARIABLE_LIST(X)                          \
+    X(GitVer, "GitVer", "Git Version", "")        \
+    X(FirmVer, "FirmVer", "Firmware Version", "") \
+    X(BuildTime, "BTime", "Build Time", "")       \
+    X(BuildID, "BID", "Build ID", "")             \
+    X(CPUF, "CPUF", "CPU Frew", "Mhz")            \
+    X(FlshF, "FFreq", "Flash Freq", "Mhz")        \
+    X(Heap, "FHeap", "Free Heap", "K")            \
+    X(MsgId, "MsgId", "Message ID", "")
 
 #define WORD_LIST(X)      \
     X(Unknown, "Unknown") \
@@ -39,10 +40,10 @@
 
 class Messages {
    public:
-    enum class Uni : uint32_t {
+    enum class Sec : uint32_t {
         Unnamed = 0,
 #define AS_ENUM(name, string) name = 1 << __COUNTER__,
-        UNIT_LIST(AS_ENUM)
+        SECT_LIST(AS_ENUM)
 #undef AS_ENUM
             Count = 1 << __COUNTER__
     };
@@ -50,6 +51,8 @@ class Messages {
 #define GENERATE_ENUM(id, msg) id,
     enum class Sev : uint8_t { SEVERITY_LIST(GENERATE_ENUM) Count };
     enum class Not : uint16_t { NOTICE_LIST(GENERATE_ENUM) Count };
+#undef GENERATE_ENUM
+#define GENERATE_ENUM(id, var, hlp, unit) id,
     enum class Var : uint16_t { VARIABLE_LIST(GENERATE_ENUM) Count };
 #undef GENERATE_ENUM
 
@@ -65,7 +68,7 @@ class Messages {
 
     typedef struct {
         time_t asof;
-        Uni unit;
+        Sec sect;
         Sev severity;
         Not notice;
     } LogMessage;
@@ -79,14 +82,14 @@ class Messages {
     Messages& operator=(const Messages&) = delete;
 
     // message functions
-    constexpr const char* get_word(Uni code) {
-        uint32_t unit = static_cast<uint32_t>(code);
-        if (unit == 0) return _units[0];
-        uint8_t bit = __builtin_ctz(unit);
-        if (bit >= unit_max) {
+    constexpr const char* get_word(Sec code) {
+        uint32_t sect = static_cast<uint32_t>(code);
+        if (sect == 0) return _sects[0];
+        uint8_t bit = __builtin_ctz(sect);
+        if (bit >= sect_max) {
             return Word::Invalid;
         }
-        return _units[bit + 1];
+        return _sects[bit + 1];
     }
     static constexpr const char* get_message(Sev code) {
         return _severities[static_cast<uint8_t>(code)];
@@ -97,26 +100,39 @@ class Messages {
     static constexpr const char* get_message(Var code) {
         return _variables[static_cast<uint16_t>(code)];
     }
+    static constexpr const char* get_unit(Var code) {
+        return _var_units[static_cast<uint16_t>(code)];
+    }
 
    protected:
 #define GENERATE_STRING(id, msg) msg,
-    static constexpr const char* const _units[] = {"Unamed",
-                                                   UNIT_LIST(GENERATE_STRING)};
+    static constexpr const char* const _sects[] = {"Unamed",
+                                                   SECT_LIST(GENERATE_STRING)};
     static constexpr const char* const _severities[] = {
         SEVERITY_LIST(GENERATE_STRING)};
     static constexpr const char* const _notices[] = {
         NOTICE_LIST(GENERATE_STRING)};
+#undef GENERATE_STRING
+#define GENERATE_STRING(id, var, help, unit) var,
     static constexpr const char* const _variables[] = {
         VARIABLE_LIST(GENERATE_STRING)};
 #undef GENERATE_STRING
-#undef UNIT_LIST
+#define GENERATE_STRING(id, var, help, unit) help,
+    static constexpr const char* const _var_help[] = {
+        VARIABLE_LIST(GENERATE_STRING)};
+#undef GENERATE_STRING
+#define GENERATE_STRING(id, var, help, unit) unit,
+    static constexpr const char* const _var_units[] = {
+        VARIABLE_LIST(GENERATE_STRING)};
+#undef GENERATE_STRING
+#undef SECT_LIST
 #undef SEVERITY_LIST
 #undef NOTICE_LIST
 #undef VARIABLE_LIST
 
-    uint32_t unit_max;
+    uint32_t sect_max;
 
-    Messages() { unit_max = __builtin_ctz(static_cast<uint32_t>(Uni::Count)); }
+    Messages() { sect_max = __builtin_ctz(static_cast<uint32_t>(Sec::Count)); }
 };
 
 static Messages& messages = Messages::getInstance();
