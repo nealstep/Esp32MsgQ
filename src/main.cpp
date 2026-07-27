@@ -6,19 +6,74 @@
 #include "version.h"
 
 #ifdef ARDUINO
-#else
-#define CHANCE 1000
-#endif  // ARDUINO !ARDUINO
+#include <TaskScheduler.h>
+#ifdef IS_M5
+#include <M5Unified.h>
+#endif  // IS_M5
+#endif  // ARDUINO
+
+static constexpr const uint8_t number_size = 16;
 
 static constexpr const uint16_t startup_delay = 2000;
-static constexpr const uint32_t tiny_delay = 5;
+static constexpr const uint8_t tiny_delay = 5;
+
+static constexpr const uint32_t loop_interval = 50000 - 1;
 
 static constexpr const uint32_t million = 1000000;
 static constexpr const uint32_t thousand = 1000;
 
+static constexpr const char* const number_fmt = "%u";
+
+uint32_t loop_counter = 0;
+
 #ifdef M_S_DUMMY
-M_S_Dummy m_s_dummy(1, 1);
+M_S_Dummy m_s_dummy_1_1(1, 1);
 #endif  // M_S_DUMMY
+
+// task wrappers
+void keep_alive_msg(void) {
+    LOG_MD(Messages::Sec::Main, Messages::Sev::Inf, Messages::Not::KpAlive, "");
+}
+
+#ifdef M_S_DUMMY
+void m_s_dummy_chk(void) {
+    Error::Err err = m_s_dummy_1_1.get_control(M_S_Dummy::Con::S1);
+    if (err != Error::Err::NoErr) LOG_ED(err, "m_s_dummy.get_control");
+}
+#endif  // M_S_DUMMY
+
+// place holder
+// void checkInternet(void) { esp32Net.check_internet(); }
+
+#ifdef ARDUINO
+
+// defaults
+static constexpr const uint64_t keep_alive_int = 5000UL;
+// static constexpr const uint64_t check_internt_int =  30000UL;
+
+// scheduler
+Scheduler runner;
+
+// create tasks
+Task taskSendKeepAliveMsg(keep_alive_int, TASK_FOREVER, &keep_alive_msg);
+// Task taskCheckInternet(check_internet_int, TASK_FOREVER, &checkInternet);
+
+#ifdef M_S_DUMMY
+Task taskMSDummy_1_1(m_s_dummy_1_1.interval, TASK_FOREVER, &m_s_dummy_chk);
+#endif  // M_S_DUMMY
+
+// array of tasks to be added to the scheduler
+Task* tasks[] = {
+    &taskSendKeepAliveMsg,
+#ifdef M_S_DUMMY
+    &taskMSDummy_1_1,
+#endif  // M_S_DUMMY
+        //  &taskCheckInternet
+};
+#else   // !ARDUINO
+static constexpr const time_t keep_alive_int = 5;
+static constexpr const time_t m_s_dummy_1_1_int = 15;
+#endif  // ARDUINO !ARDUINO
 
 void log_name(void) {
     DATAQ(Messages::Var::ChpNam, output.chip_name, false);
@@ -105,6 +160,11 @@ void setup() {
     delay(tiny_delay);
     check_queues();
 
+#ifdef IS_M5
+    auto cfg = M5.config();
+    M5.begin(cfg);
+#endif  // IS_M5
+
     // display version
     log_name();
     log_version();
@@ -115,8 +175,13 @@ void setup() {
     // init network
     // TODO: #3 Network init
 
-    // enable scheduler
-    // TODO: #6 implement sceduler
+#ifdef ARDUINO
+    delay(tiny_delay);
+    for (auto& task : tasks) {
+        runner.addTask(*task);
+        task->enable();
+    }
+#endif  // ARDUINO
 
     prefs.end();
     delay(tiny_delay);
@@ -125,20 +190,56 @@ void setup() {
     check_queues();
 }
 
-void loop() {
-#ifdef ARDUINO
-// TBD
-#else
-    // TODO: #7 implement simple timing sceduler native
+#ifdef IS_M5
+// M5 updates, button handling etc may also go here
+void updateM5(void) { M5.update(); }
+#endif  // IS_M5
 
-    if (rand() % CHANCE == 0)
-        if (rand() % CHANCE == 0) {
-            Error::Err err = m_s_dummy.get_control(M_S_Dummy::Con::S1);
-            if (err != Error::Err::NoErr) LOG_ED(err, "m_s_dummy.get_control");
-        }
+#ifdef SER
+void serial_inp(void) {
+    // TODO: #25 Serial input
+}
+#endif  // SER
+
+void check_cmds(void) {
+    // TODO: #26 check for commands
+}
+
+void loop() {
+    if (++loop_counter > loop_interval) {
+        char buf[number_size];
+        size_t len = snprintf(buf, sizeof(buf), number_fmt, loop_counter);
+        if ((len > 0) && (len <= sizeof(buf)))
+            LOG_MD(Messages::Sec::Main, Messages::Sev::Inf,
+                   Messages::Not::LoopN, buf);
+        else
+            LOG_ED(Error::Err::Form, "loop counter display");
+        loop_counter = 0;
+    }
+
+#ifdef SER
+    serial_inp();
+#endif  // SER
+
+#ifdef ARDUINO
+    // check if jobs need running
+    runner.execute();
+#else
+    time_t now = time(NULL);
+    if ((time_t % keep_alive_int) == 0) keepAliveMsg();
+    if ((time_t % m_s_dummy_1_1_int) == 0)
+        m_s_dummy_chk()
 #endif  // ARDUINO !ARDUINO
 
+#ifdef IS_M5
+    updateM5();
+#endif  // IS_M5
+
+    check_cmds();
+
     check_queues();
+
+    delay(tiny_delay);
 }
 
 #ifndef ARDUINO

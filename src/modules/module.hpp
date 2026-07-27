@@ -7,6 +7,8 @@
 
 class Module {
    public:
+    uint64_t interval = 15000;
+
     Module(Modules::Typ typ, const char* kind, int8_t loc, uint8_t id)
         : _loc(loc), _id(id) {
         size_t len = snprintf(_name, sizeof(_name), Modules::name_fmt,

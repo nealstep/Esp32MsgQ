@@ -15,7 +15,9 @@
 #define NOTICE_LIST(X)       \
     X(NoNotice, "No Notice") \
     X(Start, "Starting")     \
-    X(Started, "Started")
+    X(Started, "Started")    \
+    X(KpAlive, "Alive")      \
+    X(LoopN, "Looped N times")
 
 // ideally units should align with Readings::units if they are the same
 #define VARIABLE_LIST(X)                          \
