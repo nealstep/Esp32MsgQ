@@ -38,16 +38,24 @@ Error::Err Prefs::get_pref(Prf prf, uint32_t& val) {
     return err;
 }
 
-
 Error::Err Prefs::get_pref(Prf prf, char* buf, size_t buf_len) {
     Error::Err err = Error::Err::NoErr;
     const char* key = get_key(prf);
-    // if (check_type(prf, DType::STR)) {
-    //     size_t len = preferences.getString(key, buffer, buf_len);
-
-    // } else {
-    //     // bad_type
-    // }
+    if (preferences.isKey(key)) {
+        if (check_type(prf, DType::STR)) {
+#if defined(ARDUINO_ARCH_ESP32)
+            if (preferences.getType(key) != PT_STR) {
+                return Err::BdT2;
+            }
+#endif  // ARDUINO_ARCH_ESP32
+            size_t len = preferences.getString(key, buf, buf_len);
+            if (len == 0) {
+                err = Error::Err::Ovr;
+            }
+        } else
+            err = Error::Err::BdTy;
+    } else
+        err = Error::Err::NotFnd;
     return err;
 }
 
@@ -60,7 +68,6 @@ Error::Err Prefs::set_pref(Prf prf, uint32_t val) {
     Error::Err err = Error::Err::NoErr;
     return err;
 }
-
 
 Error::Err Prefs::set_pref(Prf prf, const char* buf) {
     Error::Err err = Error::Err::NoErr;

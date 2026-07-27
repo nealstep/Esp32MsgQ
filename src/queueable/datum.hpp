@@ -4,11 +4,15 @@
 #include "messages.hpp"
 #include "queue_t.hpp"
 
+#ifndef ARDUINO
+#include <cstring>
+#endif  // !ARDUINO
+
 typedef uint8_t sid_t;
 
 class Datum {
    public:
-    enum class Payload : uint8_t { U8, FLOAT, SID };
+    enum class Payload : uint8_t { U8, U16, U32, FLOAT, SID };
     static constexpr const sid_t str_max = 12;
     static constexpr const sid_t str_size = 12;
     static constexpr const sid_t str_exhausted = 0xFF;
@@ -16,8 +20,11 @@ class Datum {
     typedef struct {
         Payload payload;
         Messages::Var vid;
+        time_t asof;
         union {
             uint8_t u8;
+            uint16_t u16;
+            uint32_t u32;
             float f;
             sid_t sid;
         } value;
@@ -34,9 +41,39 @@ class Datum {
     Datum(const Datum&) = delete;
     Datum& operator=(const Datum&) = delete;
 
-    // TODO: #16 implement queued Data
-    void add(Messages::Var var, uint8_t val, bool broadcast) {}
-    void add(Messages::Var var, const char* val, bool broadcast) {}
+    void add(Messages::Var var, uint8_t val, bool broadcast) {
+        Entry entry;
+        entry.value.u8 = val;
+        set_basic(entry, var, Payload::U8, broadcast);
+    }
+
+    void add(Messages::Var var, uint16_t val, bool broadcast) {
+        Entry entry;
+        entry.value.u16 = val;
+        set_basic(entry, var, Payload::U16, broadcast);
+    }
+
+    void add(Messages::Var var, uint32_t val, bool broadcast) {
+        Entry entry;
+        entry.value.u32 = val;
+        set_basic(entry, var, Payload::U32, broadcast);
+    }
+
+    void add(Messages::Var var, const char* val, bool broadcast) {
+        Entry entry;
+        sid_t sid = get_next_str();
+        if (sid == str_exhausted) {
+            // TODO: #18 fix data add string failing silently somehow
+            return;
+        }
+        entry.value.sid = sid;
+        char* sptr = get_str(sid);
+        int len = strlcpy(sptr, val, str_max);
+        if (len >= str_max) {
+            // TODO: #19 handle truncated data queue
+        }
+        set_basic(entry, var, Payload::SID, broadcast);
+    }
 
     sid_t get_next_str() {
         sid_t ind = 0;
@@ -59,7 +96,7 @@ class Datum {
         return _str[ind];
     }
 
-    void free_context(sid_t ind) { _str_free[ind] = true; }
+    void free_str(sid_t ind) { _str_free[ind] = true; }
 
    protected:
     char _str[str_max][str_size];
@@ -69,8 +106,17 @@ class Datum {
     Datum() {
         for (uint8_t ind = 0; ind < str_max; ind++) _str_free[ind] = true;
     }
+
+    void set_basic(Entry& entry, Messages::Var var, Payload pay,
+                   bool broadcast) {
+        entry.payload = pay;
+        entry.asof = time(NULL);
+        entry.vid = var;
+        entry.broadcast = broadcast;
+        queue.push(entry);
+    }
 };
 
 static Datum& datum = Datum::getInstance();
 
-#define DATAQ(N, V, B) data.add(N, V, B)
+#define DATAQ(N, V, B) datum.add(N, V, B)

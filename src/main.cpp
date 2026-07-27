@@ -2,6 +2,7 @@
 #include "modules/m_s_dummy.hpp"
 #include "output/output.hpp"
 #include "prefs/prefs.hpp"
+#include "queueable/datum.hpp"
 #include "version.h"
 
 #ifdef ARDUINO
@@ -20,42 +21,76 @@ M_S_Dummy m_s_dummy(1, 1);
 #endif  // M_S_DUMMY
 
 void log_name(void) {
-    // TODO: #2 log_name
+    DATAQ(Messages::Var::ChpNam, output.chip_name, false);
+    DATAQ(Messages::Var::ChpID, output.chipid_s, false);
 }
 
 void log_version(void) {
-    DATAD(Messages::Var::GitVer, E32M_GIT_VERSION, false);
-    DATAD(Messages::Var::FirmVer, E32M_FIRMWARE_VERSION, false);
-    DATAD(Messages::Var::BuildTime, E32M_DATETIME_VERSION, false);
-    DATAD(Messages::Var::BuildID, BUILD_ID, false);
+    DATAQ(Messages::Var::GitVer, E32M_GIT_VERSION, false);
+    DATAQ(Messages::Var::FirmVer, E32M_FIRMWARE_VERSION, false);
+    DATAQ(Messages::Var::BuildTime, E32M_DATETIME_VERSION, false);
+    DATAQ(Messages::Var::BuildID, BUILD_ID, false);
 }
 
 void log_diagnostics(void) {
 #ifdef ARDUINO
-    DATAD(Messages::Var::CPUF, ESP.getCpuFreqMHz(), false);
-    DATAD(Messages::Var::FlshF, ESP.getFlashChipSpeed() / million, false);
-    DATAD(Messages::Var::Heap, ESP.getFreeHeap() / thousand, false);
+    DATAQ(Messages::Var::CPUF, ESP.getCpuFreqMHz(), false);
+    DATAQ(Messages::Var::FlshF, ESP.getFlashChipSpeed() / million, false);
+    DATAQ(Messages::Var::Heap, ESP.getFreeHeap() / thousand, false);
 #else
     uint16_t x = 1000;
-    DATAD(Messages::Var::CPUF, x, false);
+    DATAQ(Messages::Var::CPUF, x, false);
     uint16_t y = 5;
-    DATAD(Messages::Var::FlshF, y, false);
+    DATAQ(Messages::Var::FlshF, y, false);
 #endif  // ARDUINO
 }
 
+void check_queues(void) {
+    Error::Err err;
+    Error::Entry erre;
+    while (error.queue.pop(erre)) {
+        err = output.handle(erre);
+        if (err != Error::Err::NoErr) LOG_ED(err, "output erre");
+    }
+
+    Datum::Entry data;
+    while (datum.queue.pop(data)) {
+        err = output.handle(data);
+        if (err != Error::Err::NoErr) LOG_ED(err, "output data");
+    }
+
+    Readings::Entry reading;
+    while (readings.queue.pop(reading)) {
+        Error::Err err = output.handle(reading);
+        if (err != Error::Err::NoErr) LOG_ED(err, "output reading");
+    }
+
+    Messages::Entry mesg;
+    while (messages.queue.pop(mesg)) {
+        err = output.handle(mesg);
+        if (err != Error::Err::NoErr) LOG_ED(err, "output message");
+    }
+}
+
 void setup() {
+    Error::Err err;
     prefs.begin(PREFS_NAME, false);
+    err = prefs.get_pref(Prefs::Prf::ChpNam, output.chip_name,
+                         sizeof(output.chip_name));
+    if (err != Error::Err::NoErr) {
+        LOG_EQ(err, "prefs chip_name");
+        strlcpy(output.chip_name, Output::no_name, sizeof(output.chip_name));
+    }
 #ifdef SER
-    Prefs::Err err = prefs.get_pref(Prefs::Prf::UsSer, output.use_serial);
-    if (err != Prefs::Err::NoErr) {
-        LOG_EQ(err, Output::Context("prefs use_serial"));
+    err = prefs.get_pref(Prefs::Prf::UsSer, output.use_serial);
+    if (err != Error::Err::NoErr) {
+        LOG_EQ(err, "prefs use_serial");
         output.use_serial = true;
     }
     if (output.use_serial) {
-        Prefs::Err err =
-            prefs.get_pref(Prefs::Prf::SerSpd, output.serial_speed);
-        if (err != Prefs::Err::NoErr) {
-            LOG_EQ(err, Output::Context("prefs serial_speed"));
+        err = prefs.get_pref(Prefs::Prf::SerSpd, output.serial_speed);
+        if (err != Error::Err::NoErr) {
+            LOG_EQ(err, "prefs serial_speed");
             output.serial_speed = SERIAL_SPEED;
         }
         SER.begin(SERIAL_SPEED);
@@ -63,15 +98,19 @@ void setup() {
         output.serial_rdy = true;
     }
 #endif  // SER
+    // TODO: #24 add a preference to load default severity level and sections
     LOG_MD(Messages::Sec::Main, Messages::Sev::All, Messages::Not::Start,
            "setup");
-    DATAD(Messages::Var::MsgId, output.msgid, false);
+    DATAQ(Messages::Var::MsgId, output.msgid, false);
+    delay(tiny_delay);
+    check_queues();
 
     // display version
-    delay(tiny_delay);
     log_name();
     log_version();
     log_diagnostics();
+    delay(tiny_delay);
+    check_queues();
 
     // init network
     // TODO: #3 Network init
@@ -85,6 +124,7 @@ void setup() {
            "setup");
     // LOG_ED(Output::Err::NoMod, Output::Context("test"));
     // LOG_ED(Module::Err::NotEn, Output::Context("test"));
+    check_queues();
 }
 
 void loop() {
@@ -96,17 +136,11 @@ void loop() {
     if (rand() % CHANCE == 0)
         if (rand() % CHANCE == 0) {
             Error::Err err = m_s_dummy.get_control(M_S_Dummy::Con::S1);
-            if (err != Error::Err::NoErr)
-                LOG_ED(err, "m_s_dummy.get_control");
+            if (err != Error::Err::NoErr) LOG_ED(err, "m_s_dummy.get_control");
         }
 #endif  // ARDUINO !ARDUINO
 
-    Readings::Entry reading;
-    while (readings.queue.pop(reading)) {
-        Error::Err err = output.handle(reading);
-        if (err != Error::Err::NoErr)
-            LOG_ED(err, "m_s_dummy.get_control");
-    }
+    check_queues();
 }
 
 #ifndef ARDUINO

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global.hpp"
+#include "queueable/datum.hpp"
 #include "queueable/error.hpp"
 #include "queueable/messages.hpp"
 #include "queueable/readings.hpp"
@@ -9,7 +10,8 @@
     X(Rdg, '@')        \
     X(Log, '*')        \
     X(Erm, '!')        \
-    X(Dat, '$')
+    X(Dat, '$')        \
+    X(Msg, '#')
 
 void die(void);
 
@@ -24,16 +26,19 @@ class Output {
     static constexpr const uint8_t context_size = 64;
     static constexpr const uint8_t data_size = 64;
     static constexpr const uint8_t chipid_size = 17;
+    static constexpr const uint8_t chip_name_size = 32;
 
     static constexpr const char* const reading_fmt_u = "%c|%s|%s|%u|%s";
     static constexpr const char* const reading_fmt_f = "%c|%s|%s|%f|%s";
-    static constexpr const char* const error_fmt = "%c|%s|%s|%s:%d|%s";
+    static constexpr const char* const error_fmt = "%c|%s|%s|%s";
     static constexpr const char* const time_fmt = "%Y-%m-%d@%H:%M:%S-%Z";
     static constexpr const char* const data_fmt = "%c|%s|%s";
     static constexpr const char* const data_s_u = "%s|%u|%s";
     static constexpr const char* const data_s_s = "%s|%s|%s";
+    static constexpr const char* const msg_fmt = "%c|%s|%s|%s|%s|%s";
 
     static constexpr const char* const no_time = "NoTime";
+    static constexpr const char* const no_name = "NoName";
 
     // serial parameters
     bool use_serial = false;
@@ -48,6 +53,7 @@ class Output {
     uint64_t chipid = CHIP_ID;
 #endif  // !ARDUINO
     char chipid_s[chipid_size];
+    char chip_name[chip_name_size];
 
     // message pseudo index
     uint32_t msgid = 0;
@@ -60,35 +66,40 @@ class Output {
     Output(const Output&) = delete;
     Output& operator=(const Output&) = delete;
 
+    Error::Err handle(Error::Entry erre);
+    Error::Err handle(Datum::Entry data);
     Error::Err handle(Readings::Entry reading);
+    Error::Err handle(Messages::Entry mesg);
     void handle(Error::Err err, const char* name, const char* fname, int line) {
         _handle(Error::get_error(err), name, fname, line);
     }
     void handle(Messages::Sec sect, Messages::Sev sev, Messages::Not notice,
-                const char* name, const char* fname, int line) {}
+                const char* name, const char* fname, int line);
 
     void handle(Messages::Var var, uint32_t val, bool broadcast = false) {
         char dv_s[data_size];
-        int len = snprintf(dv_s, sizeof(dv_s), data_s_u,
-                           Messages::get_message(var), val);
+        int len =
+            snprintf(dv_s, sizeof(dv_s), data_s_u, Messages::get_message(var),
+                     val, Messages::get_unit(var));
         if (len < 0) {
             print("Error in data handler at snprintf format, Aborting");
             return;
         } else if (len >= sizeof(dv_s))
             print("Error in data handler at snprintf truncated");
-        _handle(dv_s, broadcast);
+        _handle(dv_s, time(NULL), broadcast);
     }
 
     void handle(Messages::Var var, const char* val, bool broadcast = false) {
         char dv_s[data_size];
-        int len = snprintf(dv_s, sizeof(dv_s), data_s_s,
-                           Messages::get_message(var), val, Messages::get_unit(var));
+        int len =
+            snprintf(dv_s, sizeof(dv_s), data_s_s, Messages::get_message(var),
+                     val, Messages::get_unit(var));
         if (len < 0) {
             print("Error in data handler at snprintf format, Aborting");
             return;
         } else if (len >= sizeof(dv_s))
             print("Error in data handler at snprintf truncated");
-        _handle(dv_s, broadcast);
+        _handle(dv_s, time(NULL), broadcast);
     }
 
     void print(const char* str) {
@@ -112,8 +123,9 @@ class Output {
 
     // hidden creator
     Output(void) {
-        // set_sect_mask(DEF_SECT);
-        // set_severity(DEF_SEVERITY);
+        // by default all sections and all messages
+        messages.all_sect_mask();
+        messages.set_sev_lvl(Messages::Sev::Dbg);
         // get unique name for chip
         snprintf(chipid_s, sizeof(chipid_s), "%04X%08X",
                  (uint16_t)(chipid >> 32), (uint32_t)chipid);
@@ -127,7 +139,7 @@ class Output {
     Error::Err _get_timestamp(time_t asof, char* buffer, size_t len);
     void _handle(const char* err_m, const char* name, const char* fname,
                  int line);
-    void _handle(const char* data_s, bool broadcast);
+    void _handle(const char* data_s, time_t tt, bool broadcast);
 };
 
 static Output& output = Output::getInstance();

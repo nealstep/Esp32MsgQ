@@ -27,6 +27,7 @@ class Error {
 
     typedef struct {
         Error::Err err;
+        time_t asof;
         cid_t cid;
     } Entry;
 
@@ -59,14 +60,18 @@ class Error {
                     }
                     Entry entry2;
                     entry2.err = Err::Trunc;
+                    entry2.asof = time(NULL);
                     entry2.cid = cid2;
                     queue.push(entry2);
                 }
+                Entry entry;
+                entry.err = err;
+                entry.asof = time(NULL);
+                entry.cid = cid;
+                queue.push(entry);
             }
-            Entry entry;
-            entry.err = err;
-            entry.cid = cid;
-            queue.push(entry);
+        } else {
+            // TODO: #17 handle running out of contexts
         }
     }
 

@@ -49,6 +49,7 @@ class Readings {
 #define GENERATE_STRING(id, msg) msg,
     static constexpr const char* const _units[] = {UNIT_LIST(GENERATE_STRING)};
 #undef GENERATE_STRING
+#undef UNIT_LIST
 };
 
 static Readings& readings = Readings::getInstance();

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "contexts.hpp"
 #include "global.hpp"
+#include "queue_t.hpp"
 
 #define SECT_LIST(X) \
     X(Main, "Main")  \
@@ -24,7 +26,9 @@
     X(CPUF, "CPUF", "CPU Frew", "Mhz")            \
     X(FlshF, "FFreq", "Flash Freq", "Mhz")        \
     X(Heap, "FHeap", "Free Heap", "K")            \
-    X(MsgId, "MsgId", "Message ID", "")
+    X(MsgId, "MsgId", "Message ID", "")           \
+    X(ChpNam, "ChpNam", "Chip Name", "")          \
+    X(ChpID, "ChpID", "Chip Id", "")
 
 #define WORD_LIST(X)      \
     X(Unknown, "Unknown") \
@@ -69,9 +73,16 @@ class Messages {
     typedef struct {
         time_t asof;
         Sec sect;
-        Sev severity;
+        Sev sev;
         Not notice;
-    } LogMessage;
+        cid_t cid;
+    } Entry;
+
+    QueueT<Entry> queue;
+
+    // default mask and severity level
+    Sec sect_mask;
+    Sev sev_lvl;
 
     // lazy singleton
     static Messages& getInstance(void) {
@@ -82,7 +93,7 @@ class Messages {
     Messages& operator=(const Messages&) = delete;
 
     // message functions
-    constexpr const char* get_word(Sec code) {
+    constexpr const char* get_sect(Sec code) {
         uint32_t sect = static_cast<uint32_t>(code);
         if (sect == 0) return _sects[0];
         uint8_t bit = __builtin_ctz(sect);
@@ -102,6 +113,49 @@ class Messages {
     }
     static constexpr const char* get_unit(Var code) {
         return _var_units[static_cast<uint16_t>(code)];
+    }
+
+    void add(Sec sect, Sev sev, Not notice, const char* name, const char* fname,
+             int line) {
+        cid_t cid = contexts.get_next_context();
+        if (cid <= Contexts::context_max) {
+            Contexts::Context* ctx = contexts.get_context(cid);
+            if (ctx) {
+                if (ctx->set(name, fname, line)) {
+                    // TODO: handle invalid context messages
+                }
+                Entry entry;
+                entry.asof = time(NULL);
+                entry.sect = sect;
+                entry.sev = sev;
+                entry.notice = notice;
+                entry.cid = cid;
+                queue.push(entry);
+            }
+        } else {
+            // TODO: #21 handle running out of contexts messages
+        }
+    }
+
+    void clr_sect_mask(void) { sect_mask = Sec::Unnamed; }
+    void all_sect_mask(void) {
+        sect_mask = static_cast<Sec>(static_cast<uint32_t>(Sec::Count) - 1);
+    }
+    void add_sect_mask(const char* name) {
+        // TODO: #22 search for section anme and add it
+    }
+    void add_sect_mask(Sec s) {
+        sect_mask = static_cast<Sec>(static_cast<uint32_t>(sect_mask) |
+                                     static_cast<uint32_t>(s));
+    }
+
+    void set_sev_lvl(const char* name) {
+        // TODO: #23 search for severity name and set it
+    }
+    void set_sev_lvl(Sev sev) { sev_lvl = sev; }
+
+    bool inCode(Sec item, Sec code) {
+        return (static_cast<uint32_t>(item) & static_cast<uint32_t>(code)) != 0;
     }
 
    protected:
@@ -132,10 +186,13 @@ class Messages {
 
     uint32_t sect_max;
 
-    Messages() { sect_max = __builtin_ctz(static_cast<uint32_t>(Sec::Count)); }
+    Messages() {
+        sect_max = __builtin_ctz(static_cast<uint32_t>(Sec::Count));
+        all_sect_mask();
+        set_sev_lvl(Sev::Dbg);
+    }
 };
 
 static Messages& messages = Messages::getInstance();
 
-// TODO: #15 implement queued messages
-// #define LOG_MQ(U, S, N, CI) output.handle(U, S, N, C, __FILE__, __LINE__)
+#define LOG_MQ(Sc, Sv, M, N) messages.add(Sc, Sv, M, N, __FILE__, __LINE__)

@@ -21,6 +21,7 @@ class Contexts {
         static constexpr const char* const context_fmt = "%s|%s:%d";
         static constexpr const char* const context_empty = "-|-:-";
 
+        // Error is local to avoid dependency on error.hpp
         enum class Err : uint8_t { NoErr, Format, Trunc };
 
         Context() {
@@ -87,6 +88,7 @@ class Contexts {
             return nullptr;
         } else if (ind >= context_max) {
             // invalid
+            return nullptr;
         }
         return &_context[ind];
     }
