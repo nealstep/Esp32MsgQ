@@ -10,15 +10,28 @@ template <typename T>
 class QueueT {
    public:
 #ifdef ARDUINO
-    bool Queuer::push(const T& entry) {
-        if (xQueueSend(_queue, entry, qwait) == pdPASS) {
-            return true;
+    static constexpr const uint8_t queue_size = 10;
+    static constexpr const TickType_t push_wait = 3;
+    static constexpr const TickType_t pop_wait = 0;
+
+    QueueT(uint8_t qsize = queue_size) {
+        _queue = xQueueCreate(qsize, sizeof(T));
+    }
+
+    bool push(const T& entry) {
+        if (xQueueSend(_queue, &entry, push_wait) == errQUEUE_FULL) {
+            // drop last element in queue (imitate circular)
+            T bogus;
+            xQueueReceive(_queue, &bogus, pop_wait);
+            if (xQueueSend(_queue, &entry, push_wait) == errQUEUE_FULL) {
+                return false;
+            }
         }
         return false;
     }
 
-    bool Queuer::pop(T& entry) {
-        if (xQueueReceive(_queue, entry, 0) == pdPASS) {
+    bool pop(T& entry) {
+        if (xQueueReceive(_queue, &entry, pop_wait) == pdPASS) {
             return true;
         }
         return false;
@@ -41,6 +54,7 @@ class QueueT {
    protected:
 #ifdef ARDUINO
     QueueHandle_t _queue;
+
 #else
     std::queue<T> _queue;
 #endif  // ARDUINO !ARDUINO

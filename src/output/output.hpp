@@ -123,9 +123,6 @@ class Output {
 
     // hidden creator
     Output(void) {
-        // by default all sections and all messages
-        messages.all_sect_mask();
-        messages.set_sev_lvl(Messages::Sev::Dbg);
         // get unique name for chip
         snprintf(chipid_s, sizeof(chipid_s), "%04X%08X",
                  (uint16_t)(chipid >> 32), (uint32_t)chipid);

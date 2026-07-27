@@ -122,8 +122,6 @@ void setup() {
     delay(tiny_delay);
     LOG_MD(Messages::Sec::Main, Messages::Sev::All, Messages::Not::Started,
            "setup");
-    // LOG_ED(Output::Err::NoMod, Output::Context("test"));
-    // LOG_ED(Module::Err::NotEn, Output::Context("test"));
     check_queues();
 }
 

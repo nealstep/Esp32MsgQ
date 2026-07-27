@@ -7,7 +7,7 @@ Error::Err Prefs::get_pref(Prf prf, bool& val) {
         if (check_type(prf, DType::BOOL)) {
 #if defined(ARDUINO_ARCH_ESP32)
             if (preferences.getType(key) != PT_U8) {
-                return Err::BdT2;
+                return Error::Err::BdT2;
             }
 #endif  // ARDUINO_ARCH_ESP32
             val = preferences.getBool(key);
@@ -26,7 +26,7 @@ Error::Err Prefs::get_pref(Prf prf, uint32_t& val) {
         if (check_type(prf, DType::U32)) {
 #if defined(ARDUINO_ARCH_ESP32)
             if (preferences.getType(key) != PT_U32) {
-                return Err::BdT2;
+                return Error::Err::BdT2;
             }
 #endif  // ARDUINO_ARCH_ESP32
             val = preferences.getUInt(key);
@@ -45,7 +45,7 @@ Error::Err Prefs::get_pref(Prf prf, char* buf, size_t buf_len) {
         if (check_type(prf, DType::STR)) {
 #if defined(ARDUINO_ARCH_ESP32)
             if (preferences.getType(key) != PT_STR) {
-                return Err::BdT2;
+                return Error::Err::BdT2;
             }
 #endif  // ARDUINO_ARCH_ESP32
             size_t len = preferences.getString(key, buf, buf_len);
