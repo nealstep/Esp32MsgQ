@@ -6,6 +6,10 @@
 #include "queueable/messages.hpp"
 #include "queueable/readings.hpp"
 
+#ifndef ARDUINO
+#include <inttypes.h>
+#endif // !ARDUINO
+
 #define OUTPUT_LIST(X) \
     X(Rdg, '@')        \
     X(Log, '*')        \
@@ -33,7 +37,11 @@ class Output {
     static constexpr const char* const error_fmt = "%c|%s|%s|%s";
     static constexpr const char* const time_fmt = "%Y-%m-%d@%H:%M:%S-%Z";
     static constexpr const char* const data_fmt = "%c|%s|%s";
+    static constexpr const char* const data_s_i = "%s|%d|%s";
+    static constexpr const char* const data_s_li = "%s|%" PRId64 "|%s";
+    static constexpr const char* const data_s_f = "%s|%f|%s";
     static constexpr const char* const data_s_u = "%s|%u|%s";
+    static constexpr const char* const data_s_lu = "%s|%" PRIu64 "|%s";
     static constexpr const char* const data_s_s = "%s|%s|%s";
     static constexpr const char* const msg_fmt = "%c|%s|%s|%s|%s|%s";
 

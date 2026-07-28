@@ -1,5 +1,6 @@
 #include "global.hpp"
 #include "modules/m_s_dummy.hpp"
+#include "network/network.hpp"
 #include "output/output.hpp"
 #include "prefs/prefs.hpp"
 #include "queueable/datum.hpp"
@@ -19,14 +20,14 @@ static constexpr const uint8_t tiny_delay = 5;
 
 #ifdef ARDUINO
 static constexpr const uint32_t loop_interval = 10000 - 1;
-#else // !ARDUINO
+#else   // !ARDUINO
 static constexpr const uint32_t loop_interval = 10000000 - 1;
-#endif // ARDUINO !ARDUINO
+#endif  // ARDUINO !ARDUINO
 
 static constexpr const uint32_t million = 1000000;
 static constexpr const uint32_t thousand = 1000;
 
-static constexpr const char* const number_fmt = "%u";
+static constexpr const char* const unsigned_fmt = "%u";
 
 uint32_t loop_counter = 0;
 
@@ -46,21 +47,20 @@ void m_s_dummy_chk(void) {
 }
 #endif  // M_S_DUMMY
 
-// place holder
-// void checkInternet(void) { esp32Net.check_internet(); }
-
 #ifdef ARDUINO
+
+void checkInternet(void) { esp32Net.check_internet(); }
 
 // defaults
 static constexpr const uint64_t keep_alive_int = 5000UL;
-// static constexpr const uint64_t check_internt_int =  30000UL;
+static constexpr const uint64_t check_internet_int = 30000UL;
 
 // scheduler
 Scheduler runner;
 
 // create tasks
 Task taskSendKeepAliveMsg(keep_alive_int, TASK_FOREVER, &keep_alive_msg);
-// Task taskCheckInternet(check_internet_int, TASK_FOREVER, &checkInternet);
+Task taskCheckInternet(check_internet_int, TASK_FOREVER, &checkInternet);
 
 #ifdef M_S_DUMMY
 Task taskMSDummy_1_1(m_s_dummy_1_1.interval, TASK_FOREVER, &m_s_dummy_chk);
@@ -132,6 +132,33 @@ void check_queues(void) {
         err = output.handle(mesg);
         if (err != Error::Err::NoErr) LOG_ED(err, "output message");
     }
+
+    Esp32Net::Mesg msg;
+    while (esp32Net.queue.pop(msg)) {
+        switch (msg) {
+            case Esp32Net::Mesg::GotIP:
+                DATAD(Messages::Var::IP, esp32Net.get_ip(), true);
+                esp32Net.set_net_ready();
+                esp32Net.check_internet();
+                break;
+            case Esp32Net::Mesg::TimeSynced:
+                DATAQ(Messages::Var::Time, time(NULL), false);
+#ifdef ARDUINO
+                if (HAVE_RTC) {
+                    struct tm timeinfo;
+                    if (getLocalTime(&timeinfo)) {
+#ifdef IS_M5
+                        M5.Rtc.setDateTime(&timeinfo);
+#endif  // IS_M5
+                    }
+                }
+#endif  // ARDUINO
+                break;
+            default:
+                // this is impossible
+                break;
+        }
+    }
 }
 
 void setup() {
@@ -164,6 +191,7 @@ void setup() {
     LOG_MD(Messages::Sec::Main, Messages::Sev::All, Messages::Not::Start,
            "setup");
     DATAQ(Messages::Var::MsgId, output.msgid, false);
+    DATAQ(Messages::Var::Time, time(NULL), false);
     delay(tiny_delay);
     check_queues();
 
@@ -179,8 +207,12 @@ void setup() {
     delay(tiny_delay);
     check_queues();
 
-    // init network
-    // TODO: #3 Network init
+    err = esp32Net.init();
+    check_queues();
+    if (err != Error::Err::NoErr) {
+        LOG_ED(err, "net init");
+        die();
+    }
 
 #ifdef ARDUINO
     delay(tiny_delay);
@@ -214,11 +246,11 @@ void check_cmds(void) {
 
 void loop() {
     if (++loop_counter > loop_interval) {
-        char buf[number_size];
-        size_t len = snprintf(buf, sizeof(buf), number_fmt, loop_counter);
-        if ((len > 0) && (len <= sizeof(buf)))
+        char num_s[number_size];
+        size_t len = snprintf(num_s, sizeof(num_s), unsigned_fmt, loop_counter);
+        if ((len > 0) && (len <= sizeof(num_s)))
             LOG_MD(Messages::Sec::Main, Messages::Sev::Inf,
-                   Messages::Not::LoopN, buf);
+                   Messages::Not::LoopN, num_s);
         else
             LOG_ED(Error::Err::Form, "loop counter display");
         loop_counter = 0;

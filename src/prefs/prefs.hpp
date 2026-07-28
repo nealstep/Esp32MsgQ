@@ -1,7 +1,6 @@
 #pragma once
 
 #include "global.hpp"
-
 #include "queueable/error.hpp"
 
 #if !defined(ARDUINO_ARCH_ESP32) && defined(ARDUINO)
@@ -16,10 +15,17 @@
 
 enum class DType : uint8_t { BOOL, U32, STR };
 
-#define PREF_LIST(X)                \
-    X(UsSer, "UseSer", DType::BOOL) \
-    X(SerSpd, "SerSpd", DType::U32) \
-    X(ChpNam, "ChpNam", DType::STR)
+#define PREF_LIST(X)                  \
+    X(UsSer, "UseSer", DType::BOOL)   \
+    X(SerSpd, "SerSpd", DType::U32)   \
+    X(ChpNam, "ChpNam", DType::STR)   \
+    X(SSID, "SSID", DType::STR)       \
+    X(PASW, "Pass", DType::STR)       \
+    X(OTAPASS, "OtaPass", DType::STR) \
+    X(TZF, "TZFull", DType::STR)      \
+    X(NTP1, "NTP1", DType::STR)       \
+    X(NTP2, "NTP2", DType::STR)       \
+    X(NTP3, "NTP3", DType::STR)
 
 class Prefs {
    public:
