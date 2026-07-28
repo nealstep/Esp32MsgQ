@@ -14,8 +14,6 @@
 #include <cstdint>
 #include <iostream>
 
-#include "native/native.hpp"
-
 #define DEBUG(X) \
     std::cout << X << " " << __FILE__ << ":" << __LINE__ << std::endl
 

@@ -9,8 +9,9 @@
 template <typename T>
 class QueueT {
    public:
+    static constexpr const uint8_t queue_size = 25;
+
 #ifdef ARDUINO
-    static constexpr const uint8_t queue_size = 10;
     static constexpr const TickType_t push_wait = 3;
     static constexpr const TickType_t pop_wait = 0;
 
@@ -23,7 +24,13 @@ class QueueT {
             // drop last element in queue (imitate circular)
             T bogus;
             xQueueReceive(_queue, &bogus, pop_wait);
+#ifdef SER
+            DEBUG("dropping in push");
+#endif  // SER
             if (xQueueSend(_queue, &entry, push_wait) == errQUEUE_FULL) {
+#ifdef SER
+                DEBUG("failed dropping in push");
+#endif  // SER
                 return false;
             }
         }
@@ -36,7 +43,9 @@ class QueueT {
         }
         return false;
     }
-#else
+#else   // !ARDUINO
+    QueueT(uint8_t qsize = queue_size) {}
+
     bool push(const T& entry) {
         _queue.push(entry);
         return false;

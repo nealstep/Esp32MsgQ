@@ -10,7 +10,7 @@ typedef uint8_t cid_t;
 
 class Contexts {
    public:
-    static constexpr const cid_t context_max = 12;
+    static constexpr const cid_t context_max = 50;
     static constexpr const cid_t context_exhausted = 0xFF;
 
     class Context {
@@ -80,6 +80,13 @@ class Contexts {
             }
             ind++;
         }
+#ifdef ARDUINO
+#ifdef SER
+            DEBUG("Ran out of contexts");
+#endif  // SER
+#else   // !ARDUINO
+            DEBUG("Ran out of contexts");
+#endif  // ARDUINO !ARDUINO
         return context_exhausted;
     }
 

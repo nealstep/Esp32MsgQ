@@ -17,7 +17,10 @@
     X(Trunc, "Truncated")        \
     X(NotFnd, "Not Found")       \
     X(BdTy, "Bad Type")          \
-    X(BdT2, "Bad Type Pref")
+    X(BdT2, "Bad Type Pref")     \
+    X(NoNet, "No Network")       \
+    X(NoInt, "No Internet")      \
+    X(TimeSyncFail, "Time Sync Failed")
 
 class Error {
    public:
@@ -72,6 +75,13 @@ class Error {
             }
         } else {
             // TODO: #17 handle running out of contexts
+#ifdef ARDUINO
+#ifdef SER
+            DEBUG("Ran out of contexts");
+#endif  // SER
+#else   // !ARDUINO
+            DEBUG("Ran out of contexts");
+#endif  // ARDUINO !ARDUINO
         }
     }
 

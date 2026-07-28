@@ -55,6 +55,43 @@ Error::Err Output::handle(Datum::Entry data) {
 
     char* sptr = nullptr;
     switch (data.payload) {
+        case Datum::Payload::DOUBLE:
+            len = snprintf(dv_s, sizeof(dv_s), data_s_f,
+                           Messages::get_message(data.vid), data.value.d,
+                           Messages::get_unit(data.vid));
+            break;
+        case Datum::Payload::FLOAT:
+            len = snprintf(dv_s, sizeof(dv_s), data_s_f,
+                           Messages::get_message(data.vid), data.value.f,
+                           Messages::get_unit(data.vid));
+            break;
+        case Datum::Payload::I8:
+            len = snprintf(dv_s, sizeof(dv_s), data_s_i,
+                           Messages::get_message(data.vid), data.value.i8,
+                           Messages::get_unit(data.vid));
+            break;
+        case Datum::Payload::I16:
+            len = snprintf(dv_s, sizeof(dv_s), data_s_i,
+                           Messages::get_message(data.vid), data.value.i16,
+                           Messages::get_unit(data.vid));
+            break;
+        case Datum::Payload::I32:
+            len = snprintf(dv_s, sizeof(dv_s), data_s_i,
+                           Messages::get_message(data.vid), data.value.i32,
+                           Messages::get_unit(data.vid));
+            break;
+        case Datum::Payload::I64:
+            len = snprintf(dv_s, sizeof(dv_s), data_s_li,
+                           Messages::get_message(data.vid), data.value.u64,
+                           Messages::get_unit(data.vid));
+            break;
+        case Datum::Payload::SID:
+            sptr = datum.get_str(data.value.sid);
+            len = snprintf(dv_s, sizeof(dv_s), data_s_s,
+                           Messages::get_message(data.vid), sptr,
+                           Messages::get_unit(data.vid));
+            datum.free_str(data.value.sid);
+            break;
         case Datum::Payload::U8:
             len = snprintf(dv_s, sizeof(dv_s), data_s_u,
                            Messages::get_message(data.vid), data.value.u8,
@@ -70,15 +107,20 @@ Error::Err Output::handle(Datum::Entry data) {
                            Messages::get_message(data.vid), data.value.u32,
                            Messages::get_unit(data.vid));
             break;
-        case Datum::Payload::SID:
-            sptr = datum.get_str(data.value.sid);
-            len = snprintf(dv_s, sizeof(dv_s), data_s_s,
-                           Messages::get_message(data.vid), sptr,
+        case Datum::Payload::U64:
+            len = snprintf(dv_s, sizeof(dv_s), data_s_lu,
+                           Messages::get_message(data.vid), data.value.u64,
                            Messages::get_unit(data.vid));
-            datum.free_str(data.value.sid);
             break;
         default:
             // TODO: #20 Unknown data type in data output
+#ifdef ARDUINO
+#ifdef SER
+            DEBUG("Unknown data type datum");
+#endif  // SER
+#else   // !ARDUINO
+            DEBUG("Unknown data type datum");
+#endif  // ARDUINO !ARDUINO
             break;
     }
     if (len < 0) {
@@ -147,16 +189,16 @@ Error::Err Output::handle(Readings::Entry reading) {
     if (mod == nullptr) return Error::Err::NoMod;
     int len;
     switch (reading.payload) {
-        case Readings::Payload::U8:
-            len = snprintf(out_s, sizeof(out_s), reading_fmt_u,
-                           get_output(Out::Rdg), mod->get_name(),
-                           mod->get_control_name(reading.cid), reading.value.u8,
-                           ts_s);
-            break;
         case Readings::Payload::FLOAT:
             len = snprintf(out_s, sizeof(out_s), reading_fmt_f,
                            get_output(Out::Rdg), mod->get_name(),
                            mod->get_control_name(reading.cid), reading.value.f,
+                           ts_s);
+            break;
+        case Readings::Payload::U8:
+            len = snprintf(out_s, sizeof(out_s), reading_fmt_u,
+                           get_output(Out::Rdg), mod->get_name(),
+                           mod->get_control_name(reading.cid), reading.value.u8,
                            ts_s);
             break;
         default:

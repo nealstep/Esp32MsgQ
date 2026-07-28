@@ -8,29 +8,40 @@
     X(Main, "Main")  \
     X(Mods, "Mods")  \
     X(Mess, "Mess")  \
-    X(MNet, "MNet")  \
+    X(Net, "Net")    \
     X(Pref, "Pref")  \
     X(Quer, "Quer")
 
-#define NOTICE_LIST(X)       \
-    X(NoNotice, "No Notice") \
-    X(Start, "Starting")     \
-    X(Started, "Started")    \
-    X(KpAlive, "Alive")      \
-    X(LoopN, "Looped N times")
+#define NOTICE_LIST(X)                   \
+    X(NoNotice, "No Notice")             \
+    X(Start, "Starting")                 \
+    X(Started, "Started")                \
+    X(KpAlive, "Alive")                  \
+    X(LoopN, "Looped N times")           \
+    X(Connectd, "Connected")             \
+    X(GotIP, "Got IP")                   \
+    X(Disconnected, "Diconnected")       \
+    X(NetInit, "Net Init")               \
+    X(ChkInt, "Check Internet")          \
+    X(IntChkCode, "Internet Check Code") \
+    X(IntConn, "Internet Connected")     \
+    X(ChkClk, "Check Clock")             \
+    X(PrefNotFnd, "Pref Not Found")
 
-// ideally units should align with Readings::units if they are the same
-#define VARIABLE_LIST(X)                          \
-    X(GitVer, "GitVer", "Git Version", "")        \
-    X(FirmVer, "FirmVer", "Firmware Version", "") \
-    X(BuildTime, "BTime", "Build Time", "")       \
-    X(BuildID, "BID", "Build ID", "")             \
-    X(CPUF, "CPUF", "CPU Frew", "Mhz")            \
-    X(FlshF, "FFreq", "Flash Freq", "Mhz")        \
-    X(Heap, "FHeap", "Free Heap", "K")            \
-    X(MsgId, "MsgId", "Message ID", "")           \
-    X(ChpNam, "ChpNam", "Chip Name", "")          \
-    X(ChpID, "ChpID", "Chip Id", "")
+// see readings for units
+#define VARIABLE_LIST(X)                           \
+    X(GitVer, "GitVer", "Git Version", "h")        \
+    X(FirmVer, "FirmVer", "Firmware Version", "s") \
+    X(BuildTime, "BTime", "Build Time", "d")       \
+    X(BuildID, "BID", "Build ID", "s")             \
+    X(CPUF, "CPUF", "CPU Frew", "Mhz")             \
+    X(FlshF, "FFreq", "Flash Freq", "Mhz")         \
+    X(Heap, "FHeap", "Free Heap", "K")             \
+    X(MsgId, "MsgId", "Message ID", "i")           \
+    X(ChpNam, "ChpNam", "Chip Name", "s")          \
+    X(ChpID, "ChpID", "Chip Id", "h")              \
+    X(IP, "IP", "IP", "s")                         \
+    X(Time, "Time", "Time", "t")
 
 #define WORD_LIST(X)      \
     X(Unknown, "Unknown") \
@@ -135,7 +146,14 @@ class Messages {
                 queue.push(entry);
             }
         } else {
-            // TODO: #21 handle running out of contexts messages
+// TODO: #21 handle running out of contexts messages
+#ifdef ARDUINO
+#ifdef SER
+            DEBUG("Ran out of contexts");
+#endif  // SER
+#else   // !ARDUINO
+            DEBUG("Ran out of contexts");
+#endif  // ARDUINO !ARDUINO
         }
     }
 
