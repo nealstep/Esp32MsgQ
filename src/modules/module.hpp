@@ -26,6 +26,9 @@ class Module {
 
     virtual Error::Err get_control(controls_t cid) = 0;
     virtual const char* get_control_name(controls_t) = 0;
+#ifdef NMEA0183
+    Error::Err get_nmea(controls_t cid) { return Error::Err::NoErr; }
+#endif  // NMEA0183
 
    protected:
     virtual ~Module() = default;

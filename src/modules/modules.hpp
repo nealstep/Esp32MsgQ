@@ -40,7 +40,7 @@ class Modules {
     Modules& operator=(const Modules&) = delete;
 
     // functions
-    modules_t add(Module* mod_p) {
+    modules_t add(Module* mod_p, bool nmea = false) {
         modules_t mid = _modules_ind;
         if (_modules_ind < modules_max) {
             _modules[_modules_ind++] = mod_p;
@@ -48,6 +48,9 @@ class Modules {
             LOG_ED(Error::Err::ModMax, "add");
             die();
         }
+#ifdef NMEA0183
+        _nmea[mid] = nmea;
+#endif  // NMEA_0183
         return mid;
     }
 
@@ -71,6 +74,9 @@ class Modules {
     // variables
     Module* _modules[modules_max];
     modules_t _modules_ind = 0;
+#ifdef NMEA0183
+    bool _nmea[modules_max];
+#endif  // NMEA0183
 
     // hidden creator
     Modules(void) {}
