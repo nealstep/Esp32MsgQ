@@ -13,19 +13,27 @@
 #include "native/native.hpp"
 #endif  // ARDUINO_ARCH32_ESP32 !ARDUINO
 
-enum class DType : uint8_t { BOOL, U32, STR };
+enum class DType : uint8_t { BOOL, U16, U32, STR };
 
-#define PREF_LIST(X)                  \
-    X(UsSer, "UseSer", DType::BOOL)   \
-    X(SerSpd, "SerSpd", DType::U32)   \
-    X(ChpNam, "ChpNam", DType::STR)   \
-    X(SSID, "SSID", DType::STR)       \
-    X(PASW, "Pass", DType::STR)       \
-    X(OTAPASS, "OtaPass", DType::STR) \
-    X(TZF, "TZFull", DType::STR)      \
-    X(NTP1, "NTP1", DType::STR)       \
-    X(NTP2, "NTP2", DType::STR)       \
-    X(NTP3, "NTP3", DType::STR)
+#define PREF_LIST(X)                    \
+    X(UsSer, "UseSer", DType::BOOL)     \
+    X(SerSpd, "SerSpd", DType::U32)     \
+    X(ChpNam, "ChpNam", DType::STR)     \
+    X(SSID, "SSID", DType::STR)         \
+    X(PASW, "Pass", DType::STR)         \
+    X(OTAPASS, "OtaPass", DType::STR)   \
+    X(TZF, "TZFull", DType::STR)        \
+    X(NTP1, "NTP1", DType::STR)         \
+    X(NTP2, "NTP2", DType::STR)         \
+    X(NTP3, "NTP3", DType::STR)         \
+    X(BrdAddr, "BrdAddr", DType::U32)   \
+    X(BrdPrt, "BrdPrt", DType::U16)     \
+    X(BrdEnc, "BrdEnc", DType::BOOL)    \
+    X(DataAddr, "DataAddr", DType::U32) \
+    X(DataPrt, "DataPrt", DType::U16)   \
+    X(DataEnc, "DataEnc", DType::BOOL)  \
+    X(NMEAAddr, "NMEAAddr", DType::U32) \
+    X(NMEAPrt, "NMEAPrt", DType::U16)
 
 class Prefs {
    public:
@@ -59,12 +67,12 @@ class Prefs {
     bool check_type(Prf prf, DType dty) { return get_dtype(prf) == dty; }
 
     Error::Err get_pref(Prf prf, bool& val);
+    Error::Err get_pref(Prf prf, uint16_t& val);
     Error::Err get_pref(Prf prf, uint32_t& val);
-
     Error::Err get_pref(Prf prf, char* buf, size_t buf_len);
 
     Error::Err set_pref(Prf prf, bool val);
-
+    Error::Err set_pref(Prf prf, uint16_t val);
     Error::Err set_pref(Prf prf, uint32_t val);
     Error::Err set_pref(Prf prf, const char* buf);
 

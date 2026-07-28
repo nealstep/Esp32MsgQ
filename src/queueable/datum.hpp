@@ -13,6 +13,7 @@ typedef uint8_t sid_t;
 class Datum {
    public:
     enum class Payload : uint8_t {
+        BOOL,
         DOUBLE,
         FLOAT,
         I8,
@@ -34,6 +35,7 @@ class Datum {
         Messages::Var vid;
         time_t asof;
         union {
+            bool b;
             double d;
             float f;
             int8_t i8;

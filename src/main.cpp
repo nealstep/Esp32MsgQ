@@ -47,6 +47,10 @@ void m_s_dummy_chk(void) {
 }
 #endif  // M_S_DUMMY
 
+#ifdef NMEA0183
+void nmea_chk(void) { modules.check_nmea(); };
+#endif  // NMEA0183
+
 #ifdef ARDUINO
 
 void checkInternet(void) { esp32Net.check_internet(); }
@@ -54,6 +58,9 @@ void checkInternet(void) { esp32Net.check_internet(); }
 // defaults
 static constexpr const uint64_t keep_alive_int = 5000UL;
 static constexpr const uint64_t check_internet_int = 30000UL;
+#ifdef NMEA0183
+static constexpr const uint64_t nmea0183_int = 1000UL;
+#endif  // NMEA0183
 
 // scheduler
 Scheduler runner;
@@ -66,20 +73,30 @@ Task taskCheckInternet(check_internet_int, TASK_FOREVER, &checkInternet);
 Task taskMSDummy_1_1(m_s_dummy_1_1.interval, TASK_FOREVER, &m_s_dummy_chk);
 #endif  // M_S_DUMMY
 
+#ifdef NMEA0183
+Task taskNMEA0183(m_s_dummy_1_1.interval, TASK_FOREVER, &m_s_dummy_chk);
+#endif  // NMEA0183
+
 // array of tasks to be added to the scheduler
 Task* tasks[] = {
     &taskSendKeepAliveMsg,
 #ifdef M_S_DUMMY
     &taskMSDummy_1_1,
 #endif  // M_S_DUMMY
+#ifdef NMEA0183
+    &taskNMEA0183,
+#endif  // NMEA0183
         //  &taskCheckInternet
 };
-#else   // !ARDUINO
+#else  // !ARDUINO
 static constexpr const time_t keep_alive_int = 5;
-static constexpr const time_t m_s_dummy_1_1_int = 15;
-
 time_t keep_alive_last = 0;
+static constexpr const time_t m_s_dummy_1_1_int = 15;
 time_t m_s_dummy_1_1_last = 0;
+#ifdef NMEA0183
+static constexpr const time_t nmea0183_int = 1;
+time_t nmea0183_last = 0;
+#endif  // NMEA0183
 #endif  // ARDUINO !ARDUINO
 
 void log_name(void) {
@@ -275,6 +292,13 @@ void loop() {
             m_s_dummy_1_1_last = now;
             m_s_dummy_chk();
         }
+#ifdef NMEA0183
+    if (now != nmea0183_last)
+        if ((now % nmea0183_int) == 0) {
+            nmea0183_last = now;
+            nmea0183_chk();
+        }
+#endif  // NMEA0183
 #endif  // ARDUINO !ARDUINO
 
 #ifdef IS_M5

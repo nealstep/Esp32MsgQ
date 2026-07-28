@@ -47,7 +47,9 @@
     X(Unknown, "Unknown") \
     X(Invalid, "Invalid") \
     X(NoTime, "NoTime")   \
-    X(Empty, "Empty")
+    X(Empty, "Empty")     \
+    X(True, "True")       \
+    X(False, "False")
 
 #define SEVERITY_LIST(X) \
     X(Dbg, "Debug")      \

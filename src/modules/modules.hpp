@@ -49,7 +49,7 @@ class Modules {
             die();
         }
 #ifdef NMEA0183
-        _nmea[mid] = nmea;
+        if (nmea) _nmea[_nmea_ind++] = mid;
 #endif  // NMEA_0183
         return mid;
     }
@@ -64,6 +64,10 @@ class Modules {
         return _types[static_cast<uint8_t>(code)];
     }
 
+#ifdef NMEA0183
+    void check_nmea(void) { DEBUG("check_nmea not implemented"); }
+#endif  // NMEA0183
+
    protected:
     // generated constants
 #define GENERATE_STRING(id, msg) msg,
@@ -75,7 +79,8 @@ class Modules {
     Module* _modules[modules_max];
     modules_t _modules_ind = 0;
 #ifdef NMEA0183
-    bool _nmea[modules_max];
+    modules_t _nmea[modules_max];
+    modules_t _nmea_ind = 0;
 #endif  // NMEA0183
 
     // hidden creator

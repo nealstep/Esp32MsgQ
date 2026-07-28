@@ -1,7 +1,10 @@
 #include "output.hpp"
 
 #include "modules/module.hpp"
+#include "netsend.hpp"
 #include "prefs/prefs.hpp"
+
+#define BOOL_S(X) X ? Messages::Word::True : Messages::Word::False
 
 #ifndef ARDUINO
 #include <cstring>
@@ -55,6 +58,11 @@ Error::Err Output::handle(Datum::Entry data) {
 
     char* sptr = nullptr;
     switch (data.payload) {
+        case Datum::Payload::BOOL:
+            len = snprintf(dv_s, sizeof(dv_s), data_s_s,
+                           Messages::get_message(data.vid),
+                           BOOL_S(data.value.b), Messages::get_unit(data.vid));
+            break;
         case Datum::Payload::DOUBLE:
             len = snprintf(dv_s, sizeof(dv_s), data_s_f,
                            Messages::get_message(data.vid), data.value.d,
@@ -66,22 +74,22 @@ Error::Err Output::handle(Datum::Entry data) {
                            Messages::get_unit(data.vid));
             break;
         case Datum::Payload::I8:
-            len = snprintf(dv_s, sizeof(dv_s), data_s_i,
+            len = snprintf(dv_s, sizeof(dv_s), data_s_i8,
                            Messages::get_message(data.vid), data.value.i8,
                            Messages::get_unit(data.vid));
             break;
         case Datum::Payload::I16:
-            len = snprintf(dv_s, sizeof(dv_s), data_s_i,
+            len = snprintf(dv_s, sizeof(dv_s), data_s_i16,
                            Messages::get_message(data.vid), data.value.i16,
                            Messages::get_unit(data.vid));
             break;
         case Datum::Payload::I32:
-            len = snprintf(dv_s, sizeof(dv_s), data_s_i,
+            len = snprintf(dv_s, sizeof(dv_s), data_s_i32,
                            Messages::get_message(data.vid), data.value.i32,
                            Messages::get_unit(data.vid));
             break;
         case Datum::Payload::I64:
-            len = snprintf(dv_s, sizeof(dv_s), data_s_li,
+            len = snprintf(dv_s, sizeof(dv_s), data_s_i64,
                            Messages::get_message(data.vid), data.value.u64,
                            Messages::get_unit(data.vid));
             break;
@@ -93,22 +101,22 @@ Error::Err Output::handle(Datum::Entry data) {
             datum.free_str(data.value.sid);
             break;
         case Datum::Payload::U8:
-            len = snprintf(dv_s, sizeof(dv_s), data_s_u,
+            len = snprintf(dv_s, sizeof(dv_s), data_s_u8,
                            Messages::get_message(data.vid), data.value.u8,
                            Messages::get_unit(data.vid));
             break;
         case Datum::Payload::U16:
-            len = snprintf(dv_s, sizeof(dv_s), data_s_u,
+            len = snprintf(dv_s, sizeof(dv_s), data_s_u16,
                            Messages::get_message(data.vid), data.value.u16,
                            Messages::get_unit(data.vid));
             break;
         case Datum::Payload::U32:
-            len = snprintf(dv_s, sizeof(dv_s), data_s_u,
+            len = snprintf(dv_s, sizeof(dv_s), data_s_u32,
                            Messages::get_message(data.vid), data.value.u32,
                            Messages::get_unit(data.vid));
             break;
         case Datum::Payload::U64:
-            len = snprintf(dv_s, sizeof(dv_s), data_s_lu,
+            len = snprintf(dv_s, sizeof(dv_s), data_s_u64,
                            Messages::get_message(data.vid), data.value.u64,
                            Messages::get_unit(data.vid));
             break;
@@ -276,6 +284,17 @@ void Output::handle(Messages::Sec sect, Messages::Sev sev, Messages::Not notice,
     } else if (len >= sizeof(msg_s))
         LOG_EQ(Error::Err::Trunc, "Output::_handle err snprintf trunc");
     print(msg_s);
+}
+
+void Output::print(const char* str) {
+#ifdef ARDUINO
+#ifdef SER
+    if (serial_rdy) SER.println(str);  // OK
+#endif                                 // SER
+#else                                  // !ARDUINO
+    std::cout << str << std::endl;  // OK
+#endif                                 // ARDUINO !ARDIUNO
+                                       // TODO: #4 network print
 }
 
 Error::Err Output::_get_timestamp(time_t asof, char* buffer, size_t len) {

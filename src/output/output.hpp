@@ -37,11 +37,15 @@ class Output {
     static constexpr const char* const error_fmt = "%c|%s|%s|%s";
     static constexpr const char* const time_fmt = "%Y-%m-%d@%H:%M:%S-%Z";
     static constexpr const char* const data_fmt = "%c|%s|%s";
-    static constexpr const char* const data_s_i = "%s|%d|%s";
-    static constexpr const char* const data_s_li = "%s|%" PRId64 "|%s";
+    static constexpr const char* const data_s_i8 = "%s|%" PRId8 "|%s";
+    static constexpr const char* const data_s_i16 = "%s|%" PRId16 "|%s";
+    static constexpr const char* const data_s_i32 = "%s|%" PRId32 "|%s";
+    static constexpr const char* const data_s_i64 = "%s|%" PRId64 "|%s";
     static constexpr const char* const data_s_f = "%s|%f|%s";
-    static constexpr const char* const data_s_u = "%s|%u|%s";
-    static constexpr const char* const data_s_lu = "%s|%" PRIu64 "|%s";
+    static constexpr const char* const data_s_u8 = "%s|%" PRIu8 "|%s";
+    static constexpr const char* const data_s_u16 = "%s|%" PRIu16" |%s";
+    static constexpr const char* const data_s_u32 = "%s|%" PRIu32" |%s";
+    static constexpr const char* const data_s_u64 = "%s|%" PRIu64 "|%s";
     static constexpr const char* const data_s_s = "%s|%s|%s";
     static constexpr const char* const msg_fmt = "%c|%s|%s|%s|%s|%s";
 
@@ -84,10 +88,23 @@ class Output {
     void handle(Messages::Sec sect, Messages::Sev sev, Messages::Not notice,
                 const char* name, const char* fname, int line);
 
+    void handle(Messages::Var var, uint16_t val, bool broadcast = false) {
+        char dv_s[data_size];
+        int len =
+            snprintf(dv_s, sizeof(dv_s), data_s_u16, Messages::get_message(var),
+                     val, Messages::get_unit(var));
+        if (len < 0) {
+            print("Error in data handler at snprintf format, Aborting");
+            return;
+        } else if (len >= sizeof(dv_s))
+            print("Error in data handler at snprintf truncated");
+        _handle(dv_s, time(NULL), broadcast);
+    }
+
     void handle(Messages::Var var, uint32_t val, bool broadcast = false) {
         char dv_s[data_size];
         int len =
-            snprintf(dv_s, sizeof(dv_s), data_s_u, Messages::get_message(var),
+            snprintf(dv_s, sizeof(dv_s), data_s_u32, Messages::get_message(var),
                      val, Messages::get_unit(var));
         if (len < 0) {
             print("Error in data handler at snprintf format, Aborting");
@@ -110,17 +127,7 @@ class Output {
         _handle(dv_s, time(NULL), broadcast);
     }
 
-    void print(const char* str) {
-#ifdef ARDUINO
-#ifdef SER
-        if (serial_rdy) SER.println(str);  // OK
-#endif                                     // SER
-#else                                      // !ARDUINO
-        std::cout << str << std::endl;  // OK
-#endif                                     // ARDUINO !ARDIUNO
-                                           // TODO: #4 network print
-    }
-
+    void print(const char* str); 
     static constexpr const char get_output(Out out) { return _outputs[out]; }
 
    protected:
