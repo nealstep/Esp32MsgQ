@@ -65,11 +65,7 @@ class Modules {
     }
 
 #ifdef NMEA0183
-    void check_nmea(Error::Err (*sendNMEA)(const char *)) { 
-    for (modules_t i=0; i<_nmea_ind; i++) {
-        _modules[_nmea[i]]->get_nmea(sendNMEA);
-    }
-}
+    void check_nmea(Error::Err (*sendNMEA)(const char *));
 #endif  // NMEA0183
 
    protected:

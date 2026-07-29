@@ -9,6 +9,19 @@
 #include "network/network.hpp"
 #include "output.hpp"
 
+uint32_t NetSend::_get_u32(const char* addr_s) {
+#ifdef ARDUINO
+    IPAddress addr(addr_s);
+    return static_cast<uint32_t>(addr);
+#else   // !ARDUINO
+    IPAddress addr;
+    if (inet_pton(AF_INET, addr_s, &addr) != 1) {
+        return 0;
+    }
+    return addr.s_addr;
+#endif  // ARDUINO !ARDUINO
+}
+
 Error::Err NetSend::init(void) {
     Error::Err err;
     bool def_e;
@@ -17,29 +30,39 @@ Error::Err NetSend::init(void) {
     uint32_t addr;
 
     DEBUG("Not Implemented");
+#ifdef ARDUINO
     _brdcst_addr = INADDR_NONE;
+#else   // !ARDUINO
+    _brdcst_addr.s_addr = 0;
+#endif  // ARDUINO !ARDUINO
     def_p = BRD_PRT;
     err = _get_pref_n(Prefs::Prf::BrdPrt, _brdcst_port, def_p);
     if (err != Error::Err::NoErr) return err;
     def_e = BRD_ENC;
     err = _get_pref_n(Prefs::Prf::BrdEnc, _brdcst_enc, def_e);
     if (err != Error::Err::NoErr) return err;
-    IPAddress addr_1(DATA_ADDR);
-    def_a = addr_1;
+    def_a = _get_u32(DATA_ADDR);
     err = _get_pref_n(Prefs::Prf::DataAddr, addr, def_a);
     if (err != Error::Err::NoErr) return err;
+#ifdef ARDUINO
     _data_addr = addr;
+#else   // !ARDUINO
+    _data_addr.s_addr = addr;
+#endif  // ARDUINO !ARDUINO
     def_p = DATA_PRT;
     err = _get_pref_n(Prefs::Prf::DataPrt, _data_port, def_p);
     if (err != Error::Err::NoErr) return err;
     def_e = DATA_ENC;
     err = _get_pref_n(Prefs::Prf::DataEnc, _data_enc, def_e);
     if (err != Error::Err::NoErr) return err;
-    IPAddress addr_2(NMEA_ADDR);
-    def_a = addr_2;
+    def_a = _get_u32(NMEA_ADDR);
     err = _get_pref_n(Prefs::Prf::NMEAAddr, addr, def_a);
     if (err != Error::Err::NoErr) return err;
+#ifdef ARDUINO
     _nmea_addr = addr;
+#else   // !ARDUINO
+    _nmea_addr.s_addr = addr;
+#endif  // ARDUINO !ARDUINO
     def_p = NMEA_PRT;
     err = _get_pref_n(Prefs::Prf::NMEAPrt, _nmea_port, def_p);
     if (err != Error::Err::NoErr) return err;
@@ -154,4 +177,8 @@ Error::Err NetSend::_queue_str(const char* mesg, bool brdcst, bool data,
         err = Error::Err::Trunc;
     }
     return err;
+}
+
+Error::Err send_nmea(const char* nmea_str) {
+    return netSend.send_str(nmea_str, false, false, true);
 }

@@ -102,6 +102,7 @@ class NetSend {
     };
 
     void _chk_local(void);
+    uint32_t _get_u32(const char* addr_s);
     Error::Err _send_str(const char* mesg, IPAddress target, uint16_t port,
                          bool enc, bool add_headers);
     Error::Err _queue_str(const char* mesg, bool brdcst, bool data,
@@ -146,6 +147,4 @@ class NetSend {
 
 static NetSend& netSend = NetSend::getInstance();
 
-Error::Err send_nmea(const char *nmea_str) {
-    return netSend.send_str(nmea_str, false, false, true);
-}
+Error::Err send_nmea(const char *nmea_str);
