@@ -63,6 +63,8 @@ class Esp32Net {
         queue.push(Mesg::TimeSynced);
         return Error::Err::NoErr;
     };
+    bool is_local(IPAddress x) { return true; }
+
 
    protected:
     // flags

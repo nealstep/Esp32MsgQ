@@ -305,7 +305,7 @@ void loop() {
     if (now != nmea0183_last)
         if ((now % nmea0183_int) == 0) {
             nmea0183_last = now;
-            nmea0183_chk();
+            nmea_chk();
         }
 #endif  // NMEA0183
 #endif  // ARDUINO !ARDUINO
