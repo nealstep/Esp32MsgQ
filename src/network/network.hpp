@@ -82,6 +82,11 @@ class Esp32Net {
 
     void push_mesg(Mesg mesg) { queue.push(mesg); }
 
+    bool is_local(IPAddress target) {
+        if (!net_ready()) return false;
+        return ((static_cast<uint32_t>(target) & _subnet_mask) == _subnet_addr);
+    }
+
    protected:
     // flags
     bool _net_ready = false;
@@ -107,8 +112,8 @@ class Esp32Net {
 
     void _set_subnet_mask(IPAddress smask) {
         _subnet_mask = smask;
-        _subnet_addr = (uint32_t)_local_ip & _subnet_mask;
-        _broadcast_addr = (uint32_t)_local_ip | ~_subnet_mask;
+        _subnet_addr = static_cast<uint32_t>(_local_ip) & _subnet_mask;
+        _broadcast_addr = static_cast<uint32_t>(_local_ip) | ~_subnet_mask;
     }
     void _ota_init(void);
     Error::Err _get_pref_s(Prefs::Prf prf, char* buf, size_t buf_len,
@@ -117,4 +122,4 @@ class Esp32Net {
 
 static Esp32Net& esp32Net = Esp32Net::getInstance();
 
-#endif // ARDUINO
+#endif  // ARDUINO

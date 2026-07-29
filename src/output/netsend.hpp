@@ -1,8 +1,9 @@
 #pragma once
 
 #include "global.hpp"
+#include "output/output.hpp"
 #include "prefs/prefs.hpp"
-#include "output.hpp"
+#include "queueable/error.hpp"
 
 typedef uint8_t eid_t;
 
@@ -29,36 +30,17 @@ class NetSend {
     NetSend(const NetSend&) = delete;
     NetSend& operator=(const NetSend&) = delete;
 
-    Error::Err init(void) {
-        uint32_t addr;
-        Error::Err err;
-        DEBUG("Not Implemented");
-        err = prefs.get_pref(Prefs::Prf::BrdAddr, addr);
-        if (err != Error::Err::NoErr) return err;
-        // need to eplace with what i have in network
-        return Error::Err::NoErr; }
+    Error::Err init(void);
+    Error::Err send_str(const char* str, bool brdcst, bool data,
+                        bool nmea = false);
+    Error::Err chk_queue(void);
 
-    Error::Err send_str(const char* str, bool brdcst, bool data, bool nmea) {
-        DEBUG("Not Implemented");
-        // see if we have net
-        // if not push the whole thing
-        // see if target_ip on local
-        // if not see if we have internet
-        // if not push tartip into queue
-
-        return Error::Err::NoErr;
+    void set_broadcast_addr(IPAddress brd_addr) {
+        _brdcst_addr = brd_addr;
+        _chk_local();
     }
 
-    Error::Err chk_queue(void) {
-        DEBUG("Not Implemented");
-        // check if we have net
-        // if we do check if we have internet
-        // check queue for items to send
-        return Error::Err::NoErr;
-    }
-
-    void set_broadcst_data(IPAddress brdcst_addr, int brdcst_port, bool enc) {
-        _brdcst_addr = brdcst_addr;
+    void set_broadcst_data(int brdcst_port, bool enc) {
         _brdcst_port = brdcst_port;
         _brdcst_enc = enc;
     }
@@ -99,18 +81,19 @@ class NetSend {
    protected:
     Entry _entries[ent_max];
     bool _ent_free[ent_max];
-    uint8_t _str_ind = 0;
+    eid_t _eid_ind = 0;
 
     IPAddress _brdcst_addr;
-    int _brdcst_port;
+    uint16_t _brdcst_port;
     bool _brdcst_enc;
     IPAddress _data_addr;
-    int _data_port;
+    uint16_t _data_port;
     bool _data_enc;
     bool _data_local;
 #ifdef NMEA0183
     IPAddress _nmea_addr;
-    int _nmea_port;
+    uint16_t _nmea_port;
+    bool _nmea_local;
 #endif  // NMEA0183
 
     // hiden constructor
@@ -118,7 +101,13 @@ class NetSend {
         for (uint8_t ind = 0; ind < ent_max; ind++) _ent_free[ind] = true;
     };
 
-    eid_t _get_next_str() {
+    void _chk_local(void);
+    Error::Err _send_str(const char* mesg, IPAddress target, uint16_t port,
+                         bool enc, bool add_headers);
+    Error::Err _queue_str(const char* mesg, bool brdcst, bool data,
+                          bool nmea = false);
+
+    eid_t _get_next_eid() {
         eid_t ind = 0;
         while (ind < ent_max) {
             if (_ent_free[ind]) {
@@ -130,7 +119,7 @@ class NetSend {
         return ent_exhausted;
     }
 
-    Entry* _get_str(eid_t ind) {
+    Entry* _get_entry(eid_t ind) {
         if (_ent_free[ind]) {
             return nullptr;
         } else if (ind >= ent_max) {
@@ -139,7 +128,24 @@ class NetSend {
         return &_entries[ind];
     }
 
-    void _free_str(eid_t ind) { _ent_free[ind] = true; }
+    void _free_eid(eid_t ind) { _ent_free[ind] = true; }
+
+    template <typename T>
+    Error::Err _get_pref_n(Prefs::Prf prf, T& val, T def) {
+        Error::Err err = prefs.get_pref(prf, val);
+        if (err != Error::Err::NoErr) {
+            LOG_EQ(err, "_get_pref_s get");
+            val = def;
+            LOG_MQ(Messages::Sec::Net, Messages::Sev::Wrn,
+                   Messages::Not::PrefNotFnd, Prefs::get_key(prf));
+            err = Error::Err::NoErr;
+        }
+        return err;
+    }
 };
 
 static NetSend& netSend = NetSend::getInstance();
+
+Error::Err send_nmea(const char *nmea_str) {
+    return netSend.send_str(nmea_str, false, false, true);
+}

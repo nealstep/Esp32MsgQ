@@ -36,11 +36,19 @@ class M_S_Dummy : public Module {
         } else {
             return Error::Err::NoCon;
         }
-        if (readings.queue.push(reading)) 
-            return Error::Err::QErr;
+        if (readings.queue.push(reading)) return Error::Err::QErr;
         return Error::Err::NoErr;
     }
-    const char* get_control_name(controls_t con) override { return _controls[con]; }
+    const char* get_control_name(controls_t con) override {
+        return _controls[con];
+    }
+#ifdef NMEA0183
+    Error::Err get_nmea(Error::Err (*sendNMEA)(const char*)) {
+        // return an NMEA String here
+        // example 22C water temperature
+        return sendNMEA("$IIMTW,22.0,C*0F");
+    }
+#endif  // NMEA0183
 
    protected:
 #define GENERATE_STRING(id, msg) msg,

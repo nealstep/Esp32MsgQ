@@ -1,6 +1,7 @@
 #include "global.hpp"
 #include "modules/m_s_dummy.hpp"
 #include "network/network.hpp"
+#include "output/netsend.hpp"
 #include "output/output.hpp"
 #include "prefs/prefs.hpp"
 #include "queueable/datum.hpp"
@@ -48,7 +49,7 @@ void m_s_dummy_chk(void) {
 #endif  // M_S_DUMMY
 
 #ifdef NMEA0183
-void nmea_chk(void) { modules.check_nmea(); };
+void nmea_chk(void) { modules.check_nmea(send_nmea); };
 #endif  // NMEA0183
 
 #ifdef ARDUINO
@@ -74,7 +75,7 @@ Task taskMSDummy_1_1(m_s_dummy_1_1.interval, TASK_FOREVER, &m_s_dummy_chk);
 #endif  // M_S_DUMMY
 
 #ifdef NMEA0183
-Task taskNMEA0183(m_s_dummy_1_1.interval, TASK_FOREVER, &m_s_dummy_chk);
+Task taskNMEA0183(nmea0183_int, TASK_FOREVER, &nmea_chk);
 #endif  // NMEA0183
 
 // array of tasks to be added to the scheduler
@@ -157,6 +158,7 @@ void check_queues(void) {
                 DATAD(Messages::Var::IP, esp32Net.get_ip(), true);
                 esp32Net.set_net_ready();
                 esp32Net.check_internet();
+                netSend.set_broadcast_addr(esp32Net.get_broadcast());
                 break;
             case Esp32Net::Mesg::TimeSynced:
                 DATAQ(Messages::Var::Time, time(NULL), false);
@@ -172,7 +174,7 @@ void check_queues(void) {
 #endif  // ARDUINO
                 break;
             default:
-                // this is impossible
+                DEBUG("This should not happen");
                 break;
         }
     }
@@ -228,6 +230,13 @@ void setup() {
     check_queues();
     if (err != Error::Err::NoErr) {
         LOG_ED(err, "net init");
+        die();
+    }
+
+    err = netSend.init();
+    check_queues();
+    if (err != Error::Err::NoErr) {
+        LOG_ED(err, "net send init");
         die();
     }
 

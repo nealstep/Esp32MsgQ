@@ -26,7 +26,6 @@ enum class DType : uint8_t { BOOL, U16, U32, STR };
     X(NTP1, "NTP1", DType::STR)         \
     X(NTP2, "NTP2", DType::STR)         \
     X(NTP3, "NTP3", DType::STR)         \
-    X(BrdAddr, "BrdAddr", DType::U32)   \
     X(BrdPrt, "BrdPrt", DType::U16)     \
     X(BrdEnc, "BrdEnc", DType::BOOL)    \
     X(DataAddr, "DataAddr", DType::U32) \

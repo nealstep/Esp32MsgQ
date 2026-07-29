@@ -29,7 +29,7 @@ Error::Err Prefs::get_pref(Prf prf, uint16_t& val) {
                 return Error::Err::BdT2;
             }
 #endif  // ARDUINO_ARCH_ESP32
-            val = preferences.getUInt(key);
+            val = preferences.getUShort(key);
             err = Error::Err::NoErr;
         } else
             err = Error::Err::BdTy;
