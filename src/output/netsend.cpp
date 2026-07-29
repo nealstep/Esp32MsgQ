@@ -131,6 +131,7 @@ Error::Err NetSend::_send_str(const char* mesg, IPAddress target, uint16_t port,
     if (add_headers) {
         // add a prefix of chipid and msgid
     }
+    // TODO: #29 Implement actual send
 #ifdef ARDUINO
 
 #else  // !ARDUINO
